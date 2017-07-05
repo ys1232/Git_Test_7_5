@@ -1,0 +1,1925 @@
+﻿<?xml version="1.0"?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:refId="Package"
+  DTS:CreationDate="6/27/2017 3:52:59 PM"
+  DTS:CreationName="SSIS.Package.3"
+  DTS:CreatorComputerName="VET-LT95"
+  DTS:CreatorName="WABUTLER\YShen"
+  DTS:DTSID="{5D359E68-8C09-49EA-8232-3D1D0805DE30}"
+  DTS:ExecutableType="SSIS.Package.3"
+  DTS:LastModifiedProductVersion="11.0.5058.0"
+  DTS:LocaleID="1033"
+  DTS:ObjectName="DailyDelta_Stage1"
+  DTS:PackageType="5"
+  DTS:VersionBuild="242"
+  DTS:VersionGUID="{B624DC97-5172-466E-89D7-E1FF7FA3D47B}">
+  <DTS:Property
+    DTS:Name="PackageFormatVersion">6</DTS:Property>
+  <DTS:Variables>
+    <DTS:Variable
+      DTS:CreationName=""
+      DTS:DTSID="{B5901EED-B81E-4A21-8FDC-77FE5B073722}"
+      DTS:IncludeInDebugDump="6789"
+      DTS:Namespace="User"
+      DTS:ObjectName="Variable">
+      <DTS:VariableValue
+        DTS:DataType="3">0</DTS:VariableValue>
+    </DTS:Variable>
+  </DTS:Variables>
+  <DTS:Executables>
+    <DTS:Executable
+      DTS:refId="Package\Oracle_Bulk_Insert_MultipleNpgsqlConnection"
+      DTS:CreationName="Microsoft.SqlServer.Dts.Tasks.ScriptTask.ScriptTask, Microsoft.SqlServer.ScriptTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+      DTS:Description="Script Task"
+      DTS:DTSID="{AF0AF5CE-5DCC-44C8-A00A-A6C33A0652B4}"
+      DTS:ExecutableType="Microsoft.SqlServer.Dts.Tasks.ScriptTask.ScriptTask, Microsoft.SqlServer.ScriptTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Oracle_Bulk_Insert_MultipleNpgsqlConnection"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <ScriptProject
+          Name="ST_73f07b40a0624ee897ae7fba511ade35"
+          VSTAMajorVersion="3"
+          VSTAMinorVersion="0"
+          Language="CSharp"
+          ReadOnlyVariables="System::MachineName">
+          <ProjectItem
+            Name="Properties\Settings.settings"
+            Encoding="UTF8"><![CDATA[<?xml version='1.0' encoding='iso-8859-1'?>
+<SettingsFile xmlns="uri:settings" CurrentProfile="(Default)">
+  <Profiles>
+    <Profile Name="(Default)" />
+  </Profiles>
+  <Settings />
+</SettingsFile>]]></ProjectItem>
+          <ProjectItem
+            Name="Helper.cs"
+            Encoding="UTF8"><![CDATA[using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using Oracle.DataAccess.Client;
+using System.Windows.Forms;
+
+namespace ST_13ca3a176a4845549f66bb4938d3578d
+{
+    class Helper
+    {
+
+        public static void Table_Logging(string Group_ID, string Task_Name, string Stage_name, string Start_DTM, string Status, int CNT)
+        {
+            using (OracleConnection ORAConn = new OracleConnection(Config.Oracle_ConnStr))
+            {
+                string EndDTM = DateTime.Now.ToString("dd-MMM-yy h:mm:ss.ffffff tt");
+                ORAConn.Open();
+
+                OracleCommand ORACmd = new OracleCommand("insert into DD_DailyDelta_Logging (Group_ID,Stage_Name,Task_Name,Start_DTM,End_DTM,Status,Comments) values ('"
+                    + Group_ID + "','" + Stage_name + "','" + Task_Name + "','" + Start_DTM + "','" + EndDTM + "','" + Status + "','Records Loaded/Merged:" + CNT.ToString() + "')", ORAConn);
+
+                ORACmd.ExecuteNonQuery();
+            }
+        }
+
+        public static void Table_Logging(string Group_ID, string Task_Name, string Stage_name, string Start_DTM, string Status, string Comment)
+        {
+            using (OracleConnection ORAConn = new OracleConnection(Config.Oracle_ConnStr))
+            {
+                string EndDTM = DateTime.Now.ToString("dd-MMM-yy h:mm:ss.ffffff tt");
+                ORAConn.Open();
+
+                string Comment_Remove_Quote = Comment.Replace('\'','|');
+
+                OracleCommand ORACmd = new OracleCommand("insert into DD_DailyDelta_Logging (Group_ID,Stage_Name,Task_Name,Start_DTM,End_DTM,Status,Comments) values ('"
+                    + Group_ID + "','" + Stage_name + "','" + Task_Name + "','" + Start_DTM + "','" + EndDTM + "','" + Status + "','" + Comment_Remove_Quote + "')", ORAConn);
+
+                ORACmd.ExecuteNonQuery();
+            }
+        }
+
+
+        public static void Send_Email(string Subject, string body)
+        {
+            using (OracleConnection ORAConn = new OracleConnection(Config.Oracle_SendEmail_ConnStr))
+            {
+                ORAConn.Open();
+
+                string body_Remove_Quote = body.Replace('\'', '|');
+                OracleCommand ORACmd = new OracleCommand("BEGIN c_merial.email_pkg.PR_SEND_EMAIL('" + Config.Email_From + "' ,'" + Config.Email_To + "','','" + Subject + "','" + body_Remove_Quote + "','',''); END;", ORAConn);
+
+                ORACmd.ExecuteNonQuery();
+            }
+        }
+    }
+}]]></ProjectItem>
+          <ProjectItem
+            Name="Config.cs"
+            Encoding="UTF8"><![CDATA[using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+namespace ST_13ca3a176a4845549f66bb4938d3578d
+{
+    class Config
+    {
+        //public static string Npgsql_ConnStr = "Server=ya-vsdbprod-01-nat.vcaantech.com;Database=vidb05;User ID=dailydelta_dev;Password=Timothy6:17;Timeout=1000;CommandTimeout=1000;";
+        public static string Npgsql_ConnStr = "Server=ya-vsdbrawprod-01-nat.vcaantech.com;Database=pms_raw;User ID=dailydelta_dev;Password=Timothy6:17;Timeout=1000;CommandTimeout=1000;preload reader=true;";
+        public static string Oracle_ConnStr = "User Id=vector_dev;Password=John16:20;Data Source=DBRAW;Connection Timeout=1000";
+        public static string Oracle_SendEmail_ConnStr = "User Id=c_merial_dev;Password=cmdev!;Data Source=DBRAW;Connection Timeout=1000";
+        public static string DLL_Directory = @"C:\BIProject\DailyDelta\CustomDlls\";
+        public static string Email_From = "DailyDelta_Project@HenryScheinVet.com";
+        public static string Email_To = "YShen@HenryScheinVet.com";
+        
+    }
+
+    class Constant
+    {
+        public static string Group_ID;
+        public static string MachineName;
+    }
+}]]></ProjectItem>
+          <ProjectItem
+            Name="Project"
+            Encoding="UTF16LE"><![CDATA[<?xml version="1.0" encoding="UTF-16" standalone="yes"?>
+<c:Project xmlns:c="http://schemas.microsoft.com/codeprojectml/2010/08/main" xmlns:msb="http://schemas.microsoft.com/developer/msbuild/2003" runtimeVersion="3.0" schemaVersion="1.0">
+	<msb:PropertyGroup>
+		<msb:CodeName>ST_13ca3a176a4845549f66bb4938d3578d</msb:CodeName>
+		<msb:DisplayName>ST_13ca3a176a4845549f66bb4938d3578d</msb:DisplayName>
+		<msb:Language>msBuild</msb:Language>
+		<msb:ProjectId>{916DB457-AEDF-482B-8FFD-BD117EF6D6EB}</msb:ProjectId>
+	</msb:PropertyGroup>
+	<msb:ItemGroup>
+		<msb:Project Include="ST_73f07b40a0624ee897ae7fba511ade35.csproj"/>
+		<msb:Folder Include="Service References\"/>
+		<msb:File Include="Properties\AssemblyInfo.cs"/>
+		<msb:File Include="Properties\Resources.resx"/>
+		<msb:File Include="MICROCHIP.cs"/>
+		<msb:File Include="Properties\Resources.Designer.cs"/>
+		<msb:File Include="Properties\Settings.Designer.cs"/>
+		<msb:File Include="Helper.cs"/>
+		<msb:File Include="Properties\Settings.settings"/>
+		<msb:File Include="ScriptMain.cs"/>
+		<msb:File Include="Config.cs"/>
+		<msb:File Include="Email_Template.cs"/>
+		<msb:File Include="APPOINTMENT.cs"/>
+		<msb:File Include="CANINE_BREED_MAP.cs"/>
+		<msb:File Include="PET_OWNERS.cs"/>
+		<msb:File Include="VI_BREED_CAT_MAP.cs"/>
+	</msb:ItemGroup>
+</c:Project>]]></ProjectItem>
+          <ProjectItem
+            Name="Properties\Resources.resx"
+            Encoding="UTF8"><![CDATA[<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+</root>]]></ProjectItem>
+          <ProjectItem
+            Name="Properties\AssemblyInfo.cs"
+            Encoding="UTF8"><![CDATA[using System.Reflection;
+using System.Runtime.CompilerServices;
+
+//
+// General Information about an assembly is controlled through the following 
+// set of attributes. Change these attribute values to modify the information
+// associated with an assembly.
+//
+[assembly: AssemblyTitle("ST_13ca3a176a4845549f66bb4938d3578d")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("LASCCM01")]
+[assembly: AssemblyProduct("ST_13ca3a176a4845549f66bb4938d3578d")]
+[assembly: AssemblyCopyright("Copyright @ LASCCM01 2017")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
+//
+// Version information for an assembly consists of the following four values:
+//
+//      Major Version
+//      Minor Version 
+//      Build Number
+//      Revision
+//
+// You can specify all the values or you can default the Revision and Build Numbers 
+// by using the '*' as shown below:
+
+[assembly: AssemblyVersion("1.0.*")]]]></ProjectItem>
+          <ProjectItem
+            Name="ST_73f07b40a0624ee897ae7fba511ade35.csproj"
+            Encoding="UTF8"><![CDATA[<?xml version="1.0" encoding="utf-8"?><Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003"><PropertyGroup><ProjectTypeGuids>{30D016F9-3734-4E33-A861-5E7D899E18F3};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids><Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration><Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform><ProductVersion>8.0.30703</ProductVersion><SchemaVersion>2.0</SchemaVersion><ProjectGuid>{58414883-7FC4-4547-9817-C714812D1574}</ProjectGuid><OutputType>Library</OutputType><AppDesignerFolder>Properties</AppDesignerFolder><RootNamespace>ST_13ca3a176a4845549f66bb4938d3578d</RootNamespace><AssemblyName>ST_73f07b40a0624ee897ae7fba511ade35</AssemblyName><TargetFrameworkVersion>v4.0</TargetFrameworkVersion><FileAlignment>512</FileAlignment></PropertyGroup><PropertyGroup Condition=" '$(Configuration)' == 'Debug' "><DebugSymbols>true</DebugSymbols><DebugType>full</DebugType><Optimize>false</Optimize><OutputPath>.\bin\Debug\</OutputPath><EnableUnmanagedDebugging>false</EnableUnmanagedDebugging><DefineConstants>DEBUG;TRACE</DefineConstants><ErrorReport>prompt</ErrorReport><WarningLevel>4</WarningLevel></PropertyGroup><PropertyGroup Condition=" '$(Configuration)' == 'Release' "><DebugSymbols>false</DebugSymbols><Optimize>true</Optimize><OutputPath>.\bin\Release\</OutputPath><EnableUnmanagedDebugging>false</EnableUnmanagedDebugging><DefineConstants>TRACE</DefineConstants><ErrorReport>prompt</ErrorReport><WarningLevel>4</WarningLevel></PropertyGroup><ItemGroup><Reference Include="Mono.Security, Version=4.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL"><SpecificVersion>False</SpecificVersion><HintPath>C:\Users\yshen\Downloads\Npgsql-2.2.5-net40\Mono.Security.dll</HintPath></Reference><Reference Include="Npgsql"><HintPath>C:\Windows\Microsoft.NET\Framework\v4.0.30319\Npgsql.dll</HintPath></Reference><Reference Include="Oracle.DataAccess, Version=4.112.3.0, Culture=neutral, PublicKeyToken=89b483f429c47342, processorArchitecture=AMD64" /><Reference Include="System" /><Reference Include="System.Data" /><Reference Include="System.Windows.Forms" /><Reference Include="System.Xml" /><Reference Include="Microsoft.SqlServer.ManagedDTS, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91" /><Reference Include="Microsoft.SqlServer.ScriptTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91" /></ItemGroup><ItemGroup><AppDesigner Include="Properties\" /><Compile Include="APPOINTMENT.cs" /><Compile Include="CANINE_BREED_MAP.cs" /><Compile Include="Config.cs" /><Compile Include="Email_Template.cs" /><Compile Include="Helper.cs" /><Compile Include="MICROCHIP.cs" /><Compile Include="PET_OWNERS.cs" /><Compile Include="Properties\AssemblyInfo.cs"><SubType>Code</SubType></Compile><Compile Include="VI_BREED_CAT_MAP.cs" /><EmbeddedResource Include="Properties\Resources.resx"><Generator>ResXFileCodeGenerator</Generator><LastGenOutput>Resources.Designer.cs</LastGenOutput></EmbeddedResource><Compile Include="Properties\Resources.Designer.cs"><AutoGen>True</AutoGen><DependentUpon>Resources.resx</DependentUpon></Compile><None Include="Properties\Settings.settings"><Generator>SettingsSingleFileGenerator</Generator><LastGenOutput>Settings.Designer.cs</LastGenOutput></None><Compile Include="Properties\Settings.Designer.cs"><AutoGen>True</AutoGen><DependentUpon>Settings.settings</DependentUpon></Compile><Compile Include="ScriptMain.cs"><SubType>Code</SubType></Compile></ItemGroup><ItemGroup><WCFMetadata Include="Service References\" /></ItemGroup><!-- Include the build rules for a C# project.--><Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" /><ProjectExtensions><VisualStudio><FlavorProperties GUID="{30D016F9-3734-4E33-A861-5E7D899E18F3}"><ProjectProperties HostName="VSTAHostName" HostPackage="{B3A685AA-7EAF-4BC6-9940-57959FA5AC07}" ApplicationType="usd" Language="cs" TemplatesPath="" DebugInfoExeName="devenv.exe" DebugInfoCommandLine="/vstaHostDebugUri:&quot;vstadebugc9725af0-9418-45b9-ab28-c084a3f472b0/b6c198d2-224d-45a0-a333-78c5b22b2da7&quot;" /><Host Name="ScriptTask" /><ProjectClient><HostIdentifier>SSIS_ST110</HostIdentifier></ProjectClient></FlavorProperties></VisualStudio></ProjectExtensions></Project>]]></ProjectItem>
+          <ProjectItem
+            Name="Properties\Settings.Designer.cs"
+            Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
+// <auto-generated>
+//     This code was generated by a tool.
+//
+//     Changes to this file may cause incorrect behavior and will be lost if
+//     the code is regenerated.
+// </auto-generated>
+//------------------------------------------------------------------------------
+
+[assembly: global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="ST_13ca3a176a4845549f66bb4938d3578d.Properties.Settings.get_Default():ST_13ca3a176a4845549f66bb4938d3578d.Properties.Sett" +
+    "ings")]
+
+namespace ST_13ca3a176a4845549f66bb4938d3578d.Properties {
+    
+    
+    internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
+        
+        [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
+        private static Settings defaultInstance = new Settings();
+        
+        public static Settings Default {
+            get {
+                return defaultInstance;
+            }
+        }
+    }
+}]]></ProjectItem>
+          <ProjectItem
+            Name="Properties\Resources.Designer.cs"
+            Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
+// <auto-generated>
+//     This code was generated by a tool.
+//
+//     Changes to this file may cause incorrect behavior and will be lost if
+//     the code is regenerated.
+// </auto-generated>
+//------------------------------------------------------------------------------
+
+[assembly: global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="ST_13ca3a176a4845549f66bb4938d3578d.Properties.Resources.get_ResourceManager():System.Resources.Resou" +
+    "rceManager")]
+[assembly: global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="ST_13ca3a176a4845549f66bb4938d3578d.Properties.Resources.get_Culture():System.Globalization.CultureIn" +
+    "fo")]
+[assembly: global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="ST_13ca3a176a4845549f66bb4938d3578d.Properties.Resources.set_Culture(System.Globalization.CultureInfo" +
+    "):Void")]
+
+namespace ST_13ca3a176a4845549f66bb4938d3578d.Properties {
+    
+    
+    /// <summary>
+    ///   A strongly-typed resource class, for looking up localized strings, etc.
+    /// </summary>
+    // This class was auto-generated by the StronglyTypedResourceBuilder
+    // class via a tool like ResGen or Visual Studio.
+    // To add or remove a member, edit your .ResX file then rerun ResGen
+    // with the /str option, or rebuild your VS project.
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+    internal class Resources {
+        
+        private static global::System.Resources.ResourceManager resourceMan;
+        
+        private static global::System.Globalization.CultureInfo resourceCulture;
+        
+        [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
+        internal Resources() {
+        }
+        
+        /// <summary>
+        ///   Returns the cached ResourceManager instance used by this class.
+        /// </summary>
+        [global::System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        internal static global::System.Resources.ResourceManager ResourceManager {
+            get {
+                if ((resourceMan == null)) {
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("ST_13ca3a176a4845549f66bb4938d3578d.Properties.Resources", typeof(Resources).Assembly);
+                    resourceMan = temp;
+                }
+                return resourceMan;
+            }
+        }
+        
+        /// <summary>
+        ///   Overrides the current thread's CurrentUICulture property for all
+        ///   resource lookups using this strongly typed resource class.
+        /// </summary>
+        [global::System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        internal static global::System.Globalization.CultureInfo Culture {
+            get {
+                return resourceCulture;
+            }
+            set {
+                resourceCulture = value;
+            }
+        }
+    }
+}]]></ProjectItem>
+          <ProjectItem
+            Name="ScriptMain.cs"
+            Encoding="UTF8"><![CDATA[#region Help:  Introduction to the script task
+/* The Script Task allows you to perform virtually any operation that can be accomplished in
+ * a .Net application within the context of an Integration Services control flow. 
+ * 
+ * Expand the other regions which have "Help" prefixes for examples of specific ways to use
+ * Integration Services features within this script task. */
+#endregion
+
+
+#region Namespaces
+using System;
+using System.Data;
+using Microsoft.SqlServer.Dts.Runtime;
+using System.Windows.Forms;
+using System.Data.SqlClient;
+using Oracle.DataAccess.Client;
+using Mono.Security;
+using System.Linq;
+using System.Collections.Generic;
+using Npgsql;
+using System.Reflection;
+
+#endregion
+
+
+using System.Threading.Tasks;namespace ST_13ca3a176a4845549f66bb4938d3578d
+{
+    /// <summary>
+    /// ScriptMain is the entry point class of the script.  Do not change the name, attributes,
+    /// or parent of this class.
+    /// </summary>
+    [Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
+    public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
+    {
+        #region Help:  Using Integration Services variables and parameters in a script
+        /* To use a variable in this script, first ensure that the variable has been added to 
+         * either the list contained in the ReadOnlyVariables property or the list contained in 
+         * the ReadWriteVariables property of this script task, according to whether or not your
+         * code needs to write to the variable.  To add the variable, save this script, close this instance of
+         * Visual Studio, and update the ReadOnlyVariables and 
+         * ReadWriteVariables properties in the Script Transformation Editor window.
+         * To use a parameter in this script, follow the same steps. Parameters are always read-only.
+         * 
+         * Example of reading from a variable:
+         *  DateTime startTime = (DateTime) Dts.Variables["System::StartTime"].Value;
+         * 
+         * Example of writing to a variable:
+         *  Dts.Variables["User::myStringVariable"].Value = "new value";
+         * 
+         * Example of reading from a package parameter:
+         *  int batchId = (int) Dts.Variables["$Package::batchId"].Value;
+         *  
+         * Example of reading from a project parameter:
+         *  int batchId = (int) Dts.Variables["$Project::batchId"].Value;
+         * 
+         * Example of reading from a sensitive project parameter:
+         *  int batchId = (int) Dts.Variables["$Project::batchId"].GetSensitiveValue();
+         * */
+
+        #endregion
+
+        #region Help:  Firing Integration Services events from a script
+        /* This script task can fire events for logging purposes.
+         * 
+         * Example of firing an error event:
+         *  Dts.Events.FireError(18, "Process Values", "Bad value", "", 0);
+         * 
+         * Example of firing an information event:
+         *  Dts.Events.FireInformation(3, "Process Values", "Processing has started", "", 0, ref fireAgain)
+         * 
+         * Example of firing a warning event:
+         *  Dts.Events.FireWarning(14, "Process Values", "No values received for input", "", 0);
+         * */
+        #endregion
+
+        #region Help:  Using Integration Services connection managers in a script
+        /* Some types of connection managers can be used in this script task.  See the topic 
+         * "Working with Connection Managers Programatically" for details.
+         * 
+         * Example of using an ADO.Net connection manager:
+         *  object rawConnection = Dts.Connections["Sales DB"].AcquireConnection(Dts.Transaction);
+         *  SqlConnection myADONETConnection = (SqlConnection)rawConnection;
+         *  //Use the connection in some code here, then release the connection
+         *  Dts.Connections["Sales DB"].ReleaseConnection(rawConnection);
+         *
+         * Example of using a File connection manager
+         *  object rawConnection = Dts.Connections["Prices.zip"].AcquireConnection(Dts.Transaction);
+         *  string filePath = (string)rawConnection;
+         *  //Use the connection in some code here, then release the connection
+         *  Dts.Connections["Prices.zip"].ReleaseConnection(rawConnection);
+         * */
+        #endregion
+
+        
+        /// <summary>
+        /// This method is called when this script task executes in the control flow.
+        /// Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
+        /// To open Help, press F1.
+        /// </summary>
+        /// 
+
+        #region Load Dll Dynamically
+        static ScriptMain()
+        {
+            AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(CurrentDomain_AssemblyResolve);
+        }
+
+        static System.Reflection.Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
+        {
+            
+            string a = args.Name;
+
+            if (args.Name.Contains("Npgsql"))
+            {
+                //MessageBox.Show("Npgsql Required");
+                string path = Config.DLL_Directory;
+                return System.Reflection.Assembly.LoadFile(System.IO.Path.Combine(path, "Npgsql.dll"));
+            }
+
+            if (args.Name.Contains("Mono.Security"))
+            {
+                //MessageBox.Show("Mono.Security Required");
+                string path = Config.DLL_Directory;
+                return System.Reflection.Assembly.LoadFile(System.IO.Path.Combine(path, "Mono.Security.dll"));
+            }
+            return null;
+        }
+        #endregion
+
+        public void Main()
+        {
+            Constant.MachineName = Dts.Variables["System::MachineName"].Value.ToString();
+            Constant.Group_ID = "DailyDelta_" + DateTime.Now.ToString("MM_dd_yyyy_HHmmss");
+
+            List<Action> LoadData_List = new List<Action>();
+            LoadData_List.Add(MICROCHIP.LoadData);
+            LoadData_List.Add(VI_BREED_CAT_MAP.LoadData);
+            LoadData_List.Add(PET_OWNERS.LoadData);
+            LoadData_List.Add(CANINE_BREED_MAP.LoadData);
+            LoadData_List.Add(APPOINTMENT.LoadData);
+
+            ParallelOptions options = new ParallelOptions();
+            options.MaxDegreeOfParallelism = 2;
+            Parallel.ForEach(LoadData_List, options, (method) => { method(); });
+
+            Dts.TaskResult = (int)ScriptResults.Success;
+        }
+
+        #region ScriptResults declaration
+        /// <summary>
+        /// This enum provides a convenient shorthand within the scope of this class for setting the
+        /// result of the script.
+        /// 
+        /// This code was generated automatically.
+        /// </summary>
+        enum ScriptResults
+        {
+            Success = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Success,
+            Failure = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Failure
+        };
+        #endregion
+
+    }
+}]]></ProjectItem>
+          <ProjectItem
+            Name="CANINE_BREED_MAP.cs"
+            Encoding="UTF8"><![CDATA[using System;
+using System.Data;
+using Microsoft.SqlServer.Dts.Runtime;
+using System.Windows.Forms;
+using System.Data.SqlClient;
+using Oracle.DataAccess.Client;
+using Mono.Security;
+using System.Linq;
+using System.Collections.Generic;
+using Npgsql;
+using System.Reflection;
+
+namespace ST_13ca3a176a4845549f66bb4938d3578d
+{
+
+    public class CANINE_BREED_MAP
+    {
+        public static string Task_Name = "Load Table CANINE_BREED_MAP";
+        public static string Stage_Name = "stage_1_Load_Stg_Table";
+
+        public static string PG_select_query = "select * from public.CANINE_BREED_MAP limit 100000";
+        public static string Oracle_Update_query = "insert into DD_PGSQL_CANINE_BREED_MAP (VI_BREED_ID,ARTICLE_NAME,ID,DATE_MODIFIED) values (:pIns_VI_BREED_ID,:pIns_ARTICLE_NAME,:pIns_ID,:pIns_DATE_MODIFIED)";
+
+        public class CANINE_BREED_MAP_Row
+        {
+            public string pIns_VI_BREED_ID;
+            public string pIns_ARTICLE_NAME;
+            public string pIns_ID;
+            public string pIns_DATE_MODIFIED;
+
+
+            public CANINE_BREED_MAP_Row(string VI_BREED_ID, string ARTICLE_NAME, string ID, string DATE_MODIFIED)
+            {
+                pIns_VI_BREED_ID = VI_BREED_ID;
+                pIns_ARTICLE_NAME = ARTICLE_NAME;
+                pIns_ID = ID;
+                pIns_DATE_MODIFIED = DATE_MODIFIED;
+
+            }
+        }
+
+        public static List<CANINE_BREED_MAP_Row> Prep_List(NpgsqlDataReader npgReader)
+        {
+            List<CANINE_BREED_MAP_Row> bulkData = new List<CANINE_BREED_MAP_Row>();
+
+            while (npgReader.Read())
+            { 
+                bulkData.Add(new CANINE_BREED_MAP_Row(
+                    npgReader["VI_BREED_ID"].ToString(), 
+                    npgReader["ARTICLE_NAME"].ToString(), 
+                    npgReader["ID"].ToString(), 
+                    Convert.ToDateTime(npgReader["DATE_MODIFIED"].ToString()).ToString("dd-MMM-yy hh:mm:ss.ffffff tt")));
+            }
+            
+            return bulkData;
+        }
+
+        public static Dictionary<string, OracleDbType> Oracle_Columns_Dic = new Dictionary<string, OracleDbType>();
+
+        public static Dictionary<string, OracleDbType> get_Dictionary()
+        {
+            Oracle_Columns_Dic.Add("pIns_VI_BREED_ID", OracleDbType.Int32);
+            Oracle_Columns_Dic.Add("pIns_ARTICLE_NAME", OracleDbType.Varchar2);
+            Oracle_Columns_Dic.Add("pIns_ID", OracleDbType.Int32);
+            Oracle_Columns_Dic.Add("pIns_DATE_MODIFIED", OracleDbType.TimeStamp);
+
+            return Oracle_Columns_Dic;
+        }
+
+        // this LoadData functio should be same (except the two replacement notes below) for all tables  
+        public static void LoadData()
+        {
+            string Start_DTM = DateTime.Now.ToString("dd-MMM-yy h:mm:ss.ffffff tt");
+            try
+            {
+                int Inserted_CNT;
+                using (NpgsqlConnection npgsqlConn = new NpgsqlConnection(Config.Npgsql_ConnStr))
+                {
+
+                    npgsqlConn.Open();
+                    NpgsqlCommand npgCmd = new NpgsqlCommand(PG_select_query, npgsqlConn);
+                    NpgsqlDataReader npgReader = npgCmd.ExecuteReader();
+
+                    // use current class name to replace CANINE_BREED_MAP_Row
+                    List<CANINE_BREED_MAP_Row> bulkData = CANINE_BREED_MAP.Prep_List(npgReader);
+
+                    using (OracleConnection ORAConn = new OracleConnection(Config.Oracle_ConnStr))
+                    {
+
+                        ORAConn.Open();
+
+                        OracleCommand cmd = ORAConn.CreateCommand();
+                        cmd.CommandText = Oracle_Update_query;
+                        cmd.CommandType = CommandType.Text;
+                        cmd.BindByName = true;
+                        cmd.ArrayBindCount = bulkData.Count;
+
+                        foreach (var item in get_Dictionary())
+                        {                                                                                    // use current class name to replace CANINE_BREED_MAP_Row
+                            cmd.Parameters.Add(item.Key, item.Value, bulkData.Select(c => ((FieldInfo)(typeof(CANINE_BREED_MAP_Row).GetMember(item.Key)[0])).GetValue(c)).ToArray(), ParameterDirection.Input);
+                        }
+
+                        Inserted_CNT = cmd.ExecuteNonQuery();
+
+                    }
+                }
+                Helper.Table_Logging(Constant.Group_ID, CANINE_BREED_MAP.Task_Name, CANINE_BREED_MAP.Stage_Name, Start_DTM, "Succeed", Inserted_CNT);
+                //MessageBox.Show(Inserted_CNT.ToString() + " records have been inserted");
+
+            }
+            catch (Exception e)
+            {
+                string Err_Msg = "Maching:".PadRight(20) + Constant.MachineName + "\n\n" + "Task:".PadRight(20) + CANINE_BREED_MAP.Task_Name + "\n\n" + "Error Message:".PadRight(20) + e.Message + "\n\n" + "Error StackTrace:".PadRight(20) + e.StackTrace;
+
+                string Err_Msg_truncated = Err_Msg.Substring(0, Err_Msg.Length > 1000 ? 1000 : Err_Msg.Length);
+
+                Helper.Table_Logging(Constant.Group_ID, CANINE_BREED_MAP.Task_Name, CANINE_BREED_MAP.Stage_Name, Start_DTM, "Error", Err_Msg_truncated);
+
+                Helper.Send_Email("DailyDelta package failure report", Email_Template.Error_Report(Constant.MachineName, CANINE_BREED_MAP.Task_Name, e.Message, e.StackTrace));
+
+            }
+
+        }
+
+    }
+}]]></ProjectItem>
+          <ProjectItem
+            Name="PET_OWNERS.cs"
+            Encoding="UTF8"><![CDATA[using System;
+using System.Data;
+using Microsoft.SqlServer.Dts.Runtime;
+using System.Windows.Forms;
+using System.Data.SqlClient;
+using Oracle.DataAccess.Client;
+using Mono.Security;
+using System.Linq;
+using System.Collections.Generic;
+using Npgsql;
+using System.Reflection;
+
+namespace ST_13ca3a176a4845549f66bb4938d3578d
+{
+
+    public class PET_OWNERS
+    {
+        public static string Task_Name = "Load Table PET_OWNERS";
+        public static string Stage_Name = "stage_1_Load_Stg_Table";
+
+        public static string PG_select_query = "select * from public.PET_OWNERS limit 100000";
+        //public static string Oracle_Update_query = "insert into DD_PGSQL_PET_OWNERS (ID,PMS_ID,PATIENT_ID,PET_OWNERS_DATE,TIMEOFDAY,PMS_PROVIDER_ID,CLIENT_ID,HID,REASON,NOTE,DURATION,DATE_MODIFIED,IS_ACTIVE) values (:pIns_ID,:pIns_PMS_ID,:pIns_PATIENT_ID,:pIns_PET_OWNERS_DATE,:pIns_TIMEOFDAY,:pIns_PMS_PROVIDER_ID,:pIns_CLIENT_ID,:pIns_HID,:pIns_REASON,:pIns_NOTE,:pIns_DURATION,:pIns_DATE_MODIFIED,:pIns_IS_ACTIVE)";
+        //public static string Oracle_Update_query = "insert into DD_PGSQL_PET_OWNERS (ID,PMS_ID,PATIENT_ID) values (:pIns_ID,:pIns_PMS_ID,:pIns_PATIENT_ID)";
+        //public static string Oracle_Update_query = "insert into DD_PGSQL_PET_OWNERS (ID,PMS_ID,PATIENT_ID,PMS_PROVIDER_ID,CLIENT_ID,HID,REASON,NOTE,DURATION,IS_ACTIVE) values (:pIns_ID,:pIns_PMS_ID,:pIns_PATIENT_ID,:pIns_PMS_PROVIDER_ID,:pIns_CLIENT_ID,:pIns_HID,:pIns_REASON,:pIns_NOTE,:pIns_DURATION,:pIns_IS_ACTIVE)";
+       // public static string Oracle_Update_query = "insert into DD_PGSQL_PET_OWNERS (ID,HID,PMS_ID,CLIENT_ID,PATIENT_ID,PERCENTAGE,BEGIN_DATE,END_DATE,IS_PREVIOUS,CREATE_DATE,DEACTIVATED_DATE,APPEARED_DATE,DATE_MODIFIED) values (:pIns_ID,:pIns_HID,:pIns_PMS_ID,:pIns_CLIENT_ID,:pIns_PATIENT_ID,:pIns_PERCENTAGE,:pIns_BEGIN_DATE,:pIns_END_DATE,:pIns_IS_PREVIOUS,:pIns_CREATE_DATE,:pIns_DEACTIVATED_DATE,:pIns_APPEARED_DATE,:pIns_DATE_MODIFIED)";
+        public static string Oracle_Update_query = "insert into DD_PGSQL_PET_OWNERS (ID,HID,PMS_ID,CLIENT_ID,PATIENT_ID,PERCENTAGE,BEGIN_DATE,END_DATE,IS_PREVIOUS,CREATE_DATE,DEACTIVATED_DATE,APPEARED_DATE,DATE_MODIFIED) values (:pIns_ID,:pIns_HID,:pIns_PMS_ID,:pIns_CLIENT_ID,:pIns_PATIENT_ID,:pIns_PERCENTAGE,:pIns_BEGIN_DATE,:pIns_END_DATE,:pIns_IS_PREVIOUS,:pIns_CREATE_DATE,:pIns_DEACTIVATED_DATE,:pIns_APPEARED_DATE,:pIns_DATE_MODIFIED)";
+
+        //ID,HID,PMS_ID,CLIENT_ID,PATIENT_ID,PERCENTAGE,BEGIN_DATE,END_DATE,IS_PREVIOUS,CREATE_DATE,DEACTIVATED_DATE,APPEARED_DATE,DATE_MODIFIED
+
+        public class PET_OWNERS_Row
+        {
+            public string pIns_ID;
+            public string pIns_HID;
+            public string pIns_PMS_ID;
+            public string pIns_CLIENT_ID;
+            public string pIns_PATIENT_ID;
+            public string pIns_PERCENTAGE;
+            public string pIns_BEGIN_DATE;
+            public string pIns_END_DATE;
+            public string pIns_IS_PREVIOUS;
+            public string pIns_CREATE_DATE;
+            public string pIns_DEACTIVATED_DATE;
+            public string pIns_APPEARED_DATE;
+            public string pIns_DATE_MODIFIED;
+
+
+
+           public PET_OWNERS_Row(string ID, string HID, string PMS_ID, string CLIENT_ID, string PATIENT_ID, string PERCENTAGE, string BEGIN_DATE, string END_DATE, string IS_PREVIOUS, string CREATE_DATE, string DEACTIVATED_DATE, string APPEARED_DATE, string DATE_MODIFIED)
+ 
+            {
+                pIns_ID = ID;
+                pIns_HID = HID;
+                pIns_PMS_ID = PMS_ID;
+                pIns_CLIENT_ID = CLIENT_ID;
+                pIns_PATIENT_ID = PATIENT_ID;
+                pIns_PERCENTAGE = PERCENTAGE;
+                pIns_BEGIN_DATE = BEGIN_DATE;
+                pIns_END_DATE = END_DATE;
+                pIns_IS_PREVIOUS = IS_PREVIOUS;
+                pIns_CREATE_DATE = CREATE_DATE;
+                pIns_DEACTIVATED_DATE = DEACTIVATED_DATE;
+                pIns_APPEARED_DATE = APPEARED_DATE;
+                pIns_DATE_MODIFIED = DATE_MODIFIED;
+ 
+            }
+        }
+
+        public static List<PET_OWNERS_Row> Prep_List(NpgsqlDataReader npgReader)
+        {
+            List<PET_OWNERS_Row> bulkData = new List<PET_OWNERS_Row>();
+
+            while (npgReader.Read())
+            { // Convert.ToInt32(npgReader["ID"].ToString()
+                //string End_Dtm;
+                //if (npgReader["END_DATE"].ToString() == "" || npgReader["END_DATE"].ToString() == null)
+                //{
+                 //   End_Dtm = "";
+                //}
+
+
+
+                bulkData.Add(new PET_OWNERS_Row(
+                    npgReader["ID"].ToString(),
+                    npgReader["HID"].ToString(),
+                    npgReader["PMS_ID"].ToString(),
+                    npgReader["CLIENT_ID"].ToString(),
+                    npgReader["PATIENT_ID"].ToString(),
+                    npgReader["PERCENTAGE"].ToString(),
+                    //Convert.ToDateTime(npgReader["BEGIN_DATE"].ToString()).ToString("dd-MMM-yy"),
+                    npgReader["BEGIN_DATE"].ToString() == "" || npgReader["BEGIN_DATE"].ToString() == null ? "" : Convert.ToDateTime(npgReader["BEGIN_DATE"].ToString()).ToString("dd-MMM-yy"),
+                    npgReader["END_DATE"].ToString() == "" || npgReader["END_DATE"].ToString() == null ? "" : Convert.ToDateTime(npgReader["END_DATE"].ToString()).ToString("dd-MMM-yy"),
+                    npgReader["IS_PREVIOUS"].ToString() == "False" ? "0" : "1",
+                    //Convert.ToDateTime(npgReader["CREATE_DATE"].ToString()).ToString("dd-MMM-yy"),
+                    npgReader["CREATE_DATE"].ToString() == "" || npgReader["CREATE_DATE"].ToString() == null ? "" : Convert.ToDateTime(npgReader["CREATE_DATE"].ToString()).ToString("dd-MMM-yy"),
+                    //Convert.ToDateTime(npgReader["DEACTIVATED_DATE"].ToString()).ToString("dd-MMM-yy")));
+                    npgReader["DEACTIVATED_DATE"].ToString() == "" || npgReader["DEACTIVATED_DATE"].ToString() == null ? "" : Convert.ToDateTime(npgReader["DEACTIVATED_DATE"].ToString()).ToString("dd-MMM-yy"),
+                    npgReader["APPEARED_DATE"].ToString() == "" || npgReader["APPEARED_DATE"].ToString() == null ? "" : Convert.ToDateTime(npgReader["APPEARED_DATE"].ToString()).ToString("dd-MMM-yy"),
+                    //Convert.ToDateTime(npgReader["APPEARED_DATE"].ToString()).ToString("dd-MMM-yy"),
+                    Convert.ToDateTime(npgReader["DATE_MODIFIED"].ToString()).ToString("dd-MMM-yy hh:mm:ss.ffffff tt")));
+
+                    //Convert.ToDateTime(npgReader["DATE_MODIFIED"].ToString()).ToString("dd-MMM-yy")));
+                    
+            }
+            // == null ? "": npgReader["CHIPPING_DATE"].ToString()
+            return bulkData;
+        }
+
+        public static Dictionary<string, OracleDbType> Oracle_Columns_Dic = new Dictionary<string, OracleDbType>();
+
+        public static Dictionary<string, OracleDbType> get_Dictionary()
+        {
+            Oracle_Columns_Dic.Add("pIns_ID", OracleDbType.Int32);
+            Oracle_Columns_Dic.Add("pIns_HID", OracleDbType.Int32);
+            Oracle_Columns_Dic.Add("pIns_PMS_ID", OracleDbType.Varchar2);
+            Oracle_Columns_Dic.Add("pIns_CLIENT_ID", OracleDbType.Int32);
+            Oracle_Columns_Dic.Add("pIns_PATIENT_ID", OracleDbType.Int32);
+            Oracle_Columns_Dic.Add("pIns_PERCENTAGE", OracleDbType.Decimal);
+            Oracle_Columns_Dic.Add("pIns_BEGIN_DATE", OracleDbType.Varchar2);
+            Oracle_Columns_Dic.Add("pIns_END_DATE", OracleDbType.Varchar2);
+            Oracle_Columns_Dic.Add("pIns_IS_PREVIOUS", OracleDbType.Char);
+            Oracle_Columns_Dic.Add("pIns_CREATE_DATE", OracleDbType.Varchar2);
+            Oracle_Columns_Dic.Add("pIns_DEACTIVATED_DATE", OracleDbType.Varchar2);
+            Oracle_Columns_Dic.Add("pIns_APPEARED_DATE", OracleDbType.Varchar2);
+            Oracle_Columns_Dic.Add("pIns_DATE_MODIFIED", OracleDbType.TimeStamp);
+
+            //Oracle_Columns_Dic.Add("pIns_DATE_MODIFIED", OracleDbType.Date);
+            
+
+            return Oracle_Columns_Dic;
+        }
+
+        // this LoadData functio should be same (except the two replacement notes below) for all tables  
+        public static void LoadData()
+        {
+            string Start_DTM = DateTime.Now.ToString("dd-MMM-yy h:mm:ss.ffffff tt");
+            try
+            {
+                int Inserted_CNT;
+                using (NpgsqlConnection npgsqlConn = new NpgsqlConnection(Config.Npgsql_ConnStr))
+                {
+
+                    npgsqlConn.Open();
+                    NpgsqlCommand npgCmd = new NpgsqlCommand(PG_select_query, npgsqlConn);
+                    NpgsqlDataReader npgReader = npgCmd.ExecuteReader();
+
+                    // use current class name to replace PET_OWNERS_Row
+                    List<PET_OWNERS_Row> bulkData = PET_OWNERS.Prep_List(npgReader);
+
+                    using (OracleConnection ORAConn = new OracleConnection(Config.Oracle_ConnStr))
+                    {
+
+                        ORAConn.Open();
+
+                        OracleCommand cmd = ORAConn.CreateCommand();
+                        cmd.CommandText = Oracle_Update_query;
+                        cmd.CommandType = CommandType.Text;
+                        cmd.BindByName = true;
+                        cmd.ArrayBindCount = bulkData.Count;
+
+                        foreach (var item in get_Dictionary())
+                        {                                                                                    // use current class name to replace PET_OWNERS_Row
+                            cmd.Parameters.Add(item.Key, item.Value, bulkData.Select(c => ((FieldInfo)(typeof(PET_OWNERS_Row).GetMember(item.Key)[0])).GetValue(c)).ToArray(), ParameterDirection.Input);
+                        }
+
+                        Inserted_CNT = cmd.ExecuteNonQuery();
+
+                        //MessageBox.Show(Inserted_CNT.ToString() + " records have been inserted");
+                    }
+                }
+                Helper.Table_Logging(Constant.Group_ID, PET_OWNERS.Task_Name, PET_OWNERS.Stage_Name, Start_DTM, "Succeed", Inserted_CNT);
+            }
+            catch (Exception e)
+            {
+                string Err_Msg = "Maching:".PadRight(20) + Constant.MachineName + "\n\n" + "Task:".PadRight(20) + PET_OWNERS.Task_Name + "\n\n" + "Error Message:".PadRight(20) + e.Message + "\n\n" + "Error StackTrace:".PadRight(20) + e.StackTrace;
+
+                string Err_Msg_truncated = Err_Msg.Substring(0, Err_Msg.Length > 1000 ? 1000 : Err_Msg.Length);
+
+                Helper.Table_Logging(Constant.Group_ID, PET_OWNERS.Task_Name, PET_OWNERS.Stage_Name, Start_DTM, "Error", Err_Msg_truncated);
+
+                Helper.Send_Email("DailyDelta package failure report", Email_Template.Error_Report(Constant.MachineName, PET_OWNERS.Task_Name, e.Message, e.StackTrace));
+
+
+            }
+
+        }
+
+    }
+}]]></ProjectItem>
+          <ProjectItem
+            Name="Email_Template.cs"
+            Encoding="UTF8"><![CDATA[using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+namespace ST_13ca3a176a4845549f66bb4938d3578d
+{
+    class Email_Template
+    {
+        public static string Error_Report(string Machine_Name, string Task_Name, string Err_Msg, string Err_StackTrace)
+        {
+            string Err_Email =
+                "<!DOCTYPE html>" +
+                "<html>" +
+                "<style>" +
+                "table, th, td {" +
+                "    border: 1px solid black;" +
+                "    border-collapse: collapse;" +
+                "}" +
+                "</style>" +
+                "<body>" +
+                "<h3 >DailyDelta Project Package Failure Report</h3>" +
+                "<p>Hello,</p>" +
+                "<p></p>" +
+                "<p>DailyDelta Package failed, here is the failure detail.</p>" +
+                "<p></p>" +
+                "<!--<p  style=\"color:red;\">Err Message</p>-->" +
+                "<table style=\"width:100%\">" +
+                "  <tr>" +
+                "    <td>Maching</td>" +
+                "    <td>" + Machine_Name + "</td> " +
+                "  </tr>" +
+                "  <tr>" +
+                "    <td>Task</td>" +
+                "    <td>" + Task_Name + "</td> " +
+                "  </tr>" +
+                "  <tr>" +
+                "    <td>Error Message</td>" +
+                "    <td>" + Err_Msg + "</td> " +
+                "  </tr>" +
+                "    <tr>" +
+                "    <td>Error StackTrace</td>" +
+                "    <td>" + Err_StackTrace + "</td> " +
+                "  </tr>" +
+                "</table>" +
+                "</body>" +
+                "</html>";
+
+            return Err_Email;
+        }
+    }
+}]]></ProjectItem>
+          <ProjectItem
+            Name="VI_BREED_CAT_MAP.cs"
+            Encoding="UTF8"><![CDATA[using System;
+using System.Data;
+using Microsoft.SqlServer.Dts.Runtime;
+using System.Windows.Forms;
+using System.Data.SqlClient;
+using Oracle.DataAccess.Client;
+using Mono.Security;
+using System.Linq;
+using System.Collections.Generic;
+using Npgsql;
+using System.Reflection;
+
+namespace ST_13ca3a176a4845549f66bb4938d3578d
+{
+
+    public class VI_BREED_CAT_MAP
+    {
+        public static string Task_Name = "Load Table VI_BREED_CAT_MAP";
+       public static string Stage_Name = "stage_1_Load_Stg_Table";
+
+       public static string PG_select_query = "select * from public.VI_BREED_CAT_MAP limit 100000";
+       public static string Oracle_Update_query = "insert into DD_PGSQL_VI_BREED_CAT_MAP (LOOKUP_ID,CATEGORY_ID,ID,DATE_MODIFIED) values (:pIns_LOOKUP_ID,:pIns_CATEGORY_ID,:pIns_ID,:pIns_DATE_MODIFIED)";
+
+        public class VI_BREED_CAT_MAP_Row
+        {
+            public string pIns_LOOKUP_ID;
+            public string pIns_CATEGORY_ID;
+            public string pIns_ID;
+            public string pIns_DATE_MODIFIED;
+
+
+            public VI_BREED_CAT_MAP_Row(string LOOKUP_ID, string CATEGORY_ID, string ID, string DATE_MODIFIED)
+            {
+                pIns_LOOKUP_ID = LOOKUP_ID;
+                pIns_CATEGORY_ID = CATEGORY_ID;
+                pIns_ID = ID;
+                pIns_DATE_MODIFIED = DATE_MODIFIED;
+
+            }
+        }
+
+        public static List<VI_BREED_CAT_MAP_Row> Prep_List(NpgsqlDataReader npgReader)
+        {
+            List<VI_BREED_CAT_MAP_Row> bulkData = new List<VI_BREED_CAT_MAP_Row>();
+
+            while (npgReader.Read())
+            { 
+                bulkData.Add(new VI_BREED_CAT_MAP_Row(
+                    npgReader["LOOKUP_ID"].ToString(), 
+                    npgReader["CATEGORY_ID"].ToString(), 
+                    npgReader["ID"].ToString(), 
+                    Convert.ToDateTime(npgReader["DATE_MODIFIED"].ToString()).ToString("dd-MMM-yy hh:mm:ss.ffffff tt")));
+            }
+            
+            return bulkData;
+        }
+
+        public static Dictionary<string, OracleDbType> Oracle_Columns_Dic = new Dictionary<string, OracleDbType>();
+
+        public static Dictionary<string, OracleDbType> get_Dictionary()
+        {
+            Oracle_Columns_Dic.Add("pIns_LOOKUP_ID", OracleDbType.Int32);
+            Oracle_Columns_Dic.Add("pIns_CATEGORY_ID", OracleDbType.Int32);
+            Oracle_Columns_Dic.Add("pIns_ID", OracleDbType.Int32);
+            Oracle_Columns_Dic.Add("pIns_DATE_MODIFIED", OracleDbType.TimeStamp);
+
+            return Oracle_Columns_Dic;
+        }
+
+        // this LoadData functio should be same (except the two replacement notes below) for all tables  
+        public static void LoadData()
+        {
+            string Start_DTM = DateTime.Now.ToString("dd-MMM-yy h:mm:ss.ffffff tt");
+            try
+            {
+                int Inserted_CNT;
+
+                using (NpgsqlConnection npgsqlConn = new NpgsqlConnection(Config.Npgsql_ConnStr))
+                {
+
+                    npgsqlConn.Open();
+                    NpgsqlCommand npgCmd = new NpgsqlCommand(PG_select_query, npgsqlConn);
+                    NpgsqlDataReader npgReader = npgCmd.ExecuteReader();
+
+                    // use current class name to replace VI_BREED_CAT_MAP_Row
+                    List<VI_BREED_CAT_MAP_Row> bulkData = VI_BREED_CAT_MAP.Prep_List(npgReader);
+
+                    using (OracleConnection ORAConn = new OracleConnection(Config.Oracle_ConnStr))
+                    {
+
+                        ORAConn.Open();
+
+                        OracleCommand cmd = ORAConn.CreateCommand();
+                        cmd.CommandText = Oracle_Update_query;
+                        cmd.CommandType = CommandType.Text;
+                        cmd.BindByName = true;
+                        cmd.ArrayBindCount = bulkData.Count;
+
+                        foreach (var item in get_Dictionary())
+                        {                                                                                    // use current class name to replace VI_BREED_CAT_MAP_Row
+                            cmd.Parameters.Add(item.Key, item.Value, bulkData.Select(c => ((FieldInfo)(typeof(VI_BREED_CAT_MAP_Row).GetMember(item.Key)[0])).GetValue(c)).ToArray(), ParameterDirection.Input);
+                        }
+
+                        Inserted_CNT = cmd.ExecuteNonQuery();
+                    }
+                }
+                //MessageBox.Show(Inserted_CNT.ToString() + " records have been inserted");
+                Helper.Table_Logging(Constant.Group_ID, VI_BREED_CAT_MAP.Task_Name, VI_BREED_CAT_MAP.Stage_Name, Start_DTM, "Succeed", Inserted_CNT);
+            }
+            catch (Exception e)
+            {
+                string Err_Msg = "Maching:".PadRight(20) + Constant.MachineName + "\n\n" + "Task:".PadRight(20) + VI_BREED_CAT_MAP.Task_Name + "\n\n" + "Error Message:".PadRight(20) + e.Message + "\n\n" + "Error StackTrace:".PadRight(20) + e.StackTrace;
+
+                string Err_Msg_truncated = Err_Msg.Substring(0, Err_Msg.Length > 1000 ? 1000 : Err_Msg.Length);
+
+                Helper.Table_Logging(Constant.Group_ID, VI_BREED_CAT_MAP.Task_Name, VI_BREED_CAT_MAP.Stage_Name, Start_DTM, "Error", Err_Msg_truncated);
+
+                Helper.Send_Email("DailyDelta package failure report", Email_Template.Error_Report(Constant.MachineName, VI_BREED_CAT_MAP.Task_Name, e.Message, e.StackTrace));
+
+            }
+
+        }
+
+    }
+}]]></ProjectItem>
+          <ProjectItem
+            Name="MICROCHIP.cs"
+            Encoding="UTF8"><![CDATA[using System;
+using System.Data;
+using Microsoft.SqlServer.Dts.Runtime;
+using System.Windows.Forms;
+using System.Data.SqlClient;
+using Oracle.DataAccess.Client;
+using Mono.Security;
+using System.Linq;
+using System.Collections.Generic;
+using Npgsql;
+using System.Reflection;
+
+namespace ST_13ca3a176a4845549f66bb4938d3578d
+{
+
+    public class MICROCHIP
+    {
+        public static string Task_Name = "Load Table PGSQL_MICROCHIP";  
+        public static string Stage_Name = "stage_1_Load_Stg_Table";
+
+        public static string PG_select_query = "select * from pms_extended_data.microchip limit 100000";
+        public static string Oracle_Update_query = "insert into DD_PGSQL_MICROCHIP (ID,HID,CLIENT_ID,PATIENT_ID,PMS_ID,VISIT_ID,CHIPPING_DATE,CHIP_NUMBER,CHIP_MANUFACTURER) values (:pIns_ID,:pIns_HID,:pIns_CLIENT_ID,:pIns_PATIENT_ID,:pIns_PMS_ID,:pIns_VISIT_ID,:pIns_CHIPPING_DATE,:pIns_CHIP_NUMBER,:pIns_CHIP_MANUFACTURER)";
+
+        public class MICROCHIP_Row
+        {
+            public string pIns_ID;
+            public string pIns_HID;
+            public string pIns_CLIENT_ID;
+            public string pIns_PATIENT_ID;
+            public string pIns_PMS_ID;
+            public string pIns_VISIT_ID;
+            public string pIns_CHIPPING_DATE;
+            public string pIns_CHIP_NUMBER;
+            public string pIns_CHIP_MANUFACTURER;
+
+            public MICROCHIP_Row(string ID, string HID, string CLIENT_ID, string PATIENT, string PMS_ID, string VISIT_ID, string CHIPPING_DATE, string CHIP_NUMBER, string CHIP_MANUFACTURER)
+            {
+                pIns_ID = ID;
+                pIns_HID = HID;
+                pIns_CLIENT_ID = CLIENT_ID;
+                pIns_PATIENT_ID = PATIENT;
+                pIns_PMS_ID = PMS_ID;
+                pIns_VISIT_ID = VISIT_ID;
+                pIns_CHIPPING_DATE = CHIPPING_DATE;
+                pIns_CHIP_NUMBER = CHIP_NUMBER;
+                pIns_CHIP_MANUFACTURER = CHIP_MANUFACTURER;
+            }
+        }
+
+        public static List<MICROCHIP_Row> Prep_List(NpgsqlDataReader npgReader)
+        {
+            List<MICROCHIP_Row> bulkData = new List<MICROCHIP_Row>();
+
+            while (npgReader.Read())
+            { // Convert.ToInt32(npgReader["ID"].ToString()
+                bulkData.Add(new MICROCHIP_Row(npgReader["ID"].ToString(), npgReader["HID"].ToString(), npgReader["CLIENT_ID"].ToString(), npgReader["PATIENT_ID"].ToString(),
+                     npgReader["PMS_ID"].ToString(), npgReader["VISIT_ID"].ToString(), npgReader["CHIPPING_DATE"].ToString(), npgReader["CHIP_NUMBER"].ToString(), npgReader["CHIP_MANUFACTURER"].ToString()));
+            }
+            // == null ? "": npgReader["CHIPPING_DATE"].ToString()
+            return bulkData;
+        }
+
+        public static Dictionary<string, OracleDbType> Oracle_Columns_Dic = new Dictionary<string,OracleDbType>();
+
+        public static Dictionary<string, OracleDbType> get_Dictionary()
+        {
+            Oracle_Columns_Dic.Add("pIns_ID",OracleDbType.Int32);
+            Oracle_Columns_Dic.Add("pIns_HID",OracleDbType.Int32);
+            Oracle_Columns_Dic.Add("pIns_CLIENT_ID",OracleDbType.Int32);
+            Oracle_Columns_Dic.Add("pIns_PATIENT_ID",OracleDbType.Int32);
+            Oracle_Columns_Dic.Add("pIns_PMS_ID",OracleDbType.Varchar2);
+            Oracle_Columns_Dic.Add("pIns_VISIT_ID",OracleDbType.Varchar2);
+            Oracle_Columns_Dic.Add("pIns_CHIPPING_DATE",OracleDbType.Varchar2);
+            Oracle_Columns_Dic.Add("pIns_CHIP_NUMBER",OracleDbType.Varchar2);
+            Oracle_Columns_Dic.Add("pIns_CHIP_MANUFACTURER",OracleDbType.Varchar2);
+
+            return Oracle_Columns_Dic;
+        }
+
+        // this LoadData functio should be same (except the two replacement notes below) for all tables  
+        public static void LoadData()
+        {
+            string Start_DTM = DateTime.Now.ToString("dd-MMM-yy h:mm:ss.ffffff tt");
+            
+            try
+            {
+                int Inserted_CNT;
+                using (NpgsqlConnection npgsqlConn = new NpgsqlConnection(Config.Npgsql_ConnStr))
+                {
+                    npgsqlConn.Open();
+                    NpgsqlCommand npgCmd = new NpgsqlCommand(PG_select_query, npgsqlConn);
+                    NpgsqlDataReader npgReader = npgCmd.ExecuteReader();
+
+                    // use current class name to replace MICROCHIP_Row
+                    List<MICROCHIP_Row> bulkData = MICROCHIP.Prep_List(npgReader);
+
+                    using (OracleConnection ORAConn = new OracleConnection(Config.Oracle_ConnStr))
+                    {
+                        ORAConn.Open();
+
+                        OracleCommand cmd = ORAConn.CreateCommand();
+                        cmd.CommandText = Oracle_Update_query;
+                        cmd.CommandType = CommandType.Text;
+                        cmd.BindByName = true;
+                        cmd.ArrayBindCount = bulkData.Count;
+
+                        foreach (var item in get_Dictionary())
+                        {                                                                                    // use current class name to replace MICROCHIP_Row
+                            cmd.Parameters.Add(item.Key, item.Value, bulkData.Select(c => ((FieldInfo)(typeof(MICROCHIP_Row).GetMember(item.Key)[0])).GetValue(c)).ToArray(), ParameterDirection.Input);
+                        }
+
+                        Inserted_CNT = cmd.ExecuteNonQuery();
+                        //MessageBox.Show(Inserted_CNT.ToString() + " records have been inserted");
+                    }
+                }
+
+                Helper.Table_Logging(Constant.Group_ID, MICROCHIP.Task_Name, MICROCHIP.Stage_Name, Start_DTM, "Succeed", Inserted_CNT);
+                
+            }
+            catch (Exception e)
+            {
+                string Err_Msg = "Maching:".PadRight(20) + Constant.MachineName + "\n\n" + "Task:".PadRight(20) + MICROCHIP.Task_Name+ "\n\n" + "Error Message:".PadRight(20) + e.Message + "\n\n" + "Error StackTrace:".PadRight(20) + e.StackTrace;
+                
+                string Err_Msg_truncated = Err_Msg.Substring(0,Err_Msg.Length>1000? 1000:Err_Msg.Length);
+
+                Helper.Table_Logging(Constant.Group_ID, MICROCHIP.Task_Name, MICROCHIP.Stage_Name, Start_DTM, "Error", Err_Msg_truncated);
+
+                Helper.Send_Email("DailyDelta package failure report",Email_Template.Error_Report(Constant.MachineName, MICROCHIP.Task_Name,e.Message,e.StackTrace));
+
+                //MessageBox.Show(Err_Msg);
+            }
+            
+        }
+
+    }
+}]]></ProjectItem>
+          <ProjectItem
+            Name="APPOINTMENT.cs"
+            Encoding="UTF8"><![CDATA[using System;
+using System.Data;
+using Microsoft.SqlServer.Dts.Runtime;
+using System.Windows.Forms;
+using System.Data.SqlClient;
+using Oracle.DataAccess.Client;
+using Mono.Security;
+using System.Linq;
+using System.Collections.Generic;
+using Npgsql;
+using System.Reflection;
+
+namespace ST_13ca3a176a4845549f66bb4938d3578d
+{
+
+    public class APPOINTMENT
+    {
+        public static string Task_Name = "Load Table appointment";
+        public static string Stage_Name = "stage_1_Load_Stg_Table";
+
+        public static string PG_select_query = "select * from public.appointment limit 100000";
+       public static string Oracle_Update_query = "insert into DD_PGSQL_APPOINTMENT (ID,PMS_ID,PATIENT_ID,APPOINTMENT_DATE,TIMEOFDAY,PMS_PROVIDER_ID,CLIENT_ID,HID,REASON,NOTE,DURATION,DATE_MODIFIED,IS_ACTIVE) values (:pIns_ID,:pIns_PMS_ID,:pIns_PATIENT_ID,:pIns_APPOINTMENT_DATE,:pIns_TIMEOFDAY,:pIns_PMS_PROVIDER_ID,:pIns_CLIENT_ID,:pIns_HID,:pIns_REASON,:pIns_NOTE,:pIns_DURATION,:pIns_DATE_MODIFIED,:pIns_IS_ACTIVE)";
+
+        public class APPOINTMENT_Row
+        {
+            public string pIns_ID;
+            public string pIns_PMS_ID;
+            public string pIns_PATIENT_ID;
+            public string pIns_APPOINTMENT_DATE;
+            public string pIns_TIMEOFDAY;
+            public string pIns_PMS_PROVIDER_ID;
+            public string pIns_CLIENT_ID;
+            public string pIns_HID;
+            public string pIns_REASON;
+            public string pIns_NOTE;
+            public string pIns_DURATION;
+            public string pIns_DATE_MODIFIED;
+            public string pIns_IS_ACTIVE;
+
+
+            public APPOINTMENT_Row(string ID, string PMS_ID, string PATIENT_ID, string APPOINTMENT_DATE, string TIMEOFDAY, string PMS_PROVIDER_ID, string CLIENT_ID, string HID, string REASON, string NOTE, string DURATION, string DATE_MODIFIED, string IS_ACTIVE)
+            {
+            pIns_ID = ID;
+            pIns_PMS_ID = PMS_ID;
+            pIns_PATIENT_ID = PATIENT_ID;
+            pIns_APPOINTMENT_DATE = APPOINTMENT_DATE;
+            pIns_TIMEOFDAY = TIMEOFDAY;
+            pIns_PMS_PROVIDER_ID = PMS_PROVIDER_ID;
+            pIns_CLIENT_ID = CLIENT_ID;
+            pIns_HID = HID;
+            pIns_REASON = REASON;
+            pIns_NOTE = NOTE;
+            pIns_DURATION = DURATION;
+            pIns_DATE_MODIFIED = DATE_MODIFIED;
+            pIns_IS_ACTIVE = IS_ACTIVE;
+            }
+        }
+
+        public static List<APPOINTMENT_Row> Prep_List(NpgsqlDataReader npgReader)
+        {
+            List<APPOINTMENT_Row> bulkData = new List<APPOINTMENT_Row>();
+
+            while (npgReader.Read())
+            { 
+                bulkData.Add(new APPOINTMENT_Row(
+                    npgReader["ID"].ToString(), 
+                    npgReader["PMS_ID"].ToString(), 
+                    npgReader["PATIENT_ID"].ToString(), 
+                    //Convert.ToDateTime(npgReader["DATE"].ToString()).ToString("dd-MMM-yy"),
+                    npgReader["DATE"].ToString() == "" || npgReader["DATE"].ToString() == null ? "" : Convert.ToDateTime(npgReader["DATE"].ToString()).ToString("dd-MMM-yy"),
+                    Convert.ToDateTime(npgReader["TIMEOFDAY"].ToString()).ToString("HH:mm:ss"), 
+                    npgReader["PMS_PROVIDER_ID"].ToString(), 
+                    npgReader["CLIENT_ID"].ToString(), 
+                    npgReader["HID"].ToString(), npgReader["REASON"].ToString(),
+                    npgReader["NOTE"].ToString(), npgReader["DURATION"].ToString(), 
+                    Convert.ToDateTime(npgReader["DATE_MODIFIED"].ToString()).ToString("dd-MMM-yy hh:mm:ss.ffffff tt"), 
+                    npgReader["IS_ACTIVE"].ToString() == "False" ? "0" : "1"));
+            }
+            
+            return bulkData;
+        }
+
+        public static Dictionary<string, OracleDbType> Oracle_Columns_Dic = new Dictionary<string, OracleDbType>();
+
+        public static Dictionary<string, OracleDbType> get_Dictionary()
+        {
+            Oracle_Columns_Dic.Add("pIns_ID", OracleDbType.Int32);
+            Oracle_Columns_Dic.Add("pIns_PMS_ID", OracleDbType.Varchar2);
+            Oracle_Columns_Dic.Add("pIns_PATIENT_ID", OracleDbType.Int32);
+            Oracle_Columns_Dic.Add("pIns_APPOINTMENT_DATE", OracleDbType.Varchar2);
+            Oracle_Columns_Dic.Add("pIns_TIMEOFDAY", OracleDbType.Varchar2);
+            Oracle_Columns_Dic.Add("pIns_PMS_PROVIDER_ID", OracleDbType.Int32);
+            Oracle_Columns_Dic.Add("pIns_CLIENT_ID", OracleDbType.Int32);
+            Oracle_Columns_Dic.Add("pIns_HID", OracleDbType.Int32);
+            Oracle_Columns_Dic.Add("pIns_REASON", OracleDbType.Varchar2);
+            Oracle_Columns_Dic.Add("pIns_NOTE", OracleDbType.Varchar2);
+            Oracle_Columns_Dic.Add("pIns_DURATION", OracleDbType.Varchar2);
+            Oracle_Columns_Dic.Add("pIns_DATE_MODIFIED", OracleDbType.TimeStamp);
+            Oracle_Columns_Dic.Add("pIns_IS_ACTIVE", OracleDbType.Char);
+
+            return Oracle_Columns_Dic;
+        }
+
+        // this LoadData functio should be same (except the two replacement notes below) for all tables  
+        public static void LoadData()  // added the argument
+        {
+            string Start_DTM = DateTime.Now.ToString("dd-MMM-yy h:mm:ss.ffffff tt");
+            try
+            {
+                int Inserted_CNT;
+                using (NpgsqlConnection npgsqlConn = new NpgsqlConnection(Config.Npgsql_ConnStr))
+                {
+
+                    npgsqlConn.Open();
+                    NpgsqlCommand npgCmd = new NpgsqlCommand(PG_select_query, npgsqlConn);
+                    NpgsqlDataReader npgReader = npgCmd.ExecuteReader();
+
+                    // use current class name to replace APPOINTMENT_Row
+                    List<APPOINTMENT_Row> bulkData = APPOINTMENT.Prep_List(npgReader);
+
+                    using (OracleConnection ORAConn = new OracleConnection(Config.Oracle_ConnStr))
+                    {
+
+                        ORAConn.Open();
+
+                        OracleCommand cmd = ORAConn.CreateCommand();
+                        cmd.CommandText = Oracle_Update_query;
+                        cmd.CommandType = CommandType.Text;
+                        cmd.BindByName = true;
+                        cmd.ArrayBindCount = bulkData.Count;
+
+                        foreach (var item in get_Dictionary())
+                        {                                                                                    // use current class name to replace APPOINTMENT_Row
+                            cmd.Parameters.Add(item.Key, item.Value, bulkData.Select(c => ((FieldInfo)(typeof(APPOINTMENT_Row).GetMember(item.Key)[0])).GetValue(c)).ToArray(), ParameterDirection.Input);
+                        }
+
+                        Inserted_CNT = cmd.ExecuteNonQuery();
+
+                    }
+                }
+                //MessageBox.Show(Inserted_CNT.ToString() + " records have been inserted");
+                Helper.Table_Logging(Constant.Group_ID, APPOINTMENT.Task_Name, APPOINTMENT.Stage_Name, Start_DTM, "Succeed", Inserted_CNT);
+            }
+            catch (Exception e)
+            {
+                string Err_Msg = "Maching:".PadRight(20) + Constant.MachineName + "\n\n" + "Task:".PadRight(20) + APPOINTMENT.Task_Name + "\n\n" + "Error Message:".PadRight(20) + e.Message + "\n\n" + "Error StackTrace:".PadRight(20) + e.StackTrace;
+
+                string Err_Msg_truncated = Err_Msg.Substring(0, Err_Msg.Length > 1000 ? 1000 : Err_Msg.Length);
+
+                Helper.Table_Logging(Constant.Group_ID, APPOINTMENT.Task_Name, APPOINTMENT.Stage_Name, Start_DTM, "Error", Err_Msg_truncated);
+
+                Helper.Send_Email("DailyDelta package failure report", Email_Template.Error_Report(Constant.MachineName, APPOINTMENT.Task_Name, e.Message, e.StackTrace));
+
+
+                //MessageBox.Show(Err_Msg);
+
+                //throw e;
+            }
+
+        }
+
+    }
+}]]></ProjectItem>
+          <BinaryItem
+            Name="ST_73f07b40a0624ee897ae7fba511ade35.dll">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
+CgAAAAAAAAAAAAAAFAAAAEQBAABYAQAABAEAADEAAAHOclYcAHCARAAABHL5AwBwgEUAAARyjhwA
+cIBGAAAEcvQcAHCARwAABHM4AAAKgEgAAAQqHgIoFgAACiqSAigWAAAKAgN9SQAABAIEfUoAAAQC
+BX1LAAAEAg4EfUwAAAQqHgIoFgAACioAAAATMAIALQAAABAAABF+TQAABC0gciMeAHDQEAAAAigX
+AAAKb04AAApzTwAACgoGgE0AAAR+TQAABCoafk4AAAQqHgKATgAABCoafk8AAAQqLnMtAAAGgE8A
+AAQqHgIoUQAACipeKFMAAAoU/gYwAAAGc1QAAApvVQAACioAEzACAFsAAAARAAARA29WAAAKJgNv
+VgAACnKVHgBwb1cAAAosF34fAAAECgZyox4AcChYAAAKKFkAAAoqA29WAAAKcrkeAHBvVwAACiwX
+fh8AAAQLB3LVHgBwKFgAAAooWQAACioUKh4Cb1oAAAoqABMwBADkAAAAEgAAEQIoWwAACm9cAAAK
+cvkeAHBvXQAACm9eAAAKbw8AAAqAIwAABHIhHwBwKBsAAAoMEgJyOR8AcCgSAAAKKF8AAAqAIgAA
+BHNgAAAKCgYU/gYYAAAGc2EAAApvYgAACgYU/gYkAAAGc2EAAApvYgAACgYU/gYeAAAGc2EAAApv
+YgAACgYU/gYJAAAGc2EAAApvYgAACgYU/gYDAAAGc2EAAApvYgAACnNjAAAKCwcYb2QAAAoGB35Q
+AAAELREU/gYzAAAGc2UAAAqAUAAABH5QAAAEKAcAACsmAihbAAAKFm9nAAAKKh4CKGgAAAoqtAAA
+AM7K774BAAAAkQAAAGxTeXN0ZW0uUmVzb3VyY2VzLlJlc291cmNlUmVhZGVyLCBtc2NvcmxpYiwg
+VmVyc2lvbj00LjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPWI3N2E1YzU2
+MTkzNGUwODkjU3lzdGVtLlJlc291cmNlcy5SdW50aW1lUmVzb3VyY2VTZXQCAAAAAAAAAAAAAABQ
+QURQQURQtAAAAEJTSkIBAAEAAAAAAAwAAAB2NC4wLjMwMzE5AAAAAAUAbAAAAPQOAAAjfgAAYA8A
+ALgPAAAjU3RyaW5ncwAAAAAYHwAAYB8AACNVUwB4PgAAEAAAACNHVUlEAAAAiD4AAPAFAAAjQmxv
+YgAAAAAAAAACAAABVx2iCQkLAAAA+iUzABYAAAEAAABCAAAAGAAAAFgAAAA9AAAASwAAAGgAAAAC
+AAAAFgAAABIAAAACAAAAAwAAAAQAAAAPAAAAAQAAAAgAAAABAAAACwAAAAcAAAAAAAoAAQAAAAAA
+BgCBAXoBCgCdAYgBDgD9AdQBBgAZAnoBBgByAlcCEgCAAnkCBgCbAlcCFgDTAroCBgB3BWYFBgCo
+BZMFBgA1BiMGBgA+BnoBBgBWCDwIBgBvCCMGBgCGCCMGBgCjCCMGBgDCCCMGBgDbCCMGBgD0CCMG
+BgAPCSMGBgAqCSMGBgBDCSMGBgB8CVwJBgCcCVwJGgD9CeoJBgAcCnoBBgAvCnoBBgA3CnoBBgBn
+ClcCBgCMCnoBBgCRCnoBBgC9CiMGBgDSCiMGEgDtCnkCGgD+CuoJEgAQC3kCFgAsC7oCFgA9C7oC
+GgBZC+oJGgBzC94JHwC7CwAAFgDgC7oCBgATDHoBHgAyDCYMBgA9DFcCFgBaDLoCGgBqDN4JBgCG
+DHoBBgCzDHoBBgD0DFwJBgAPDXoBBgAwDR0NCgBwDVoNCgCJDVoNDgCeDdQBBgDADXoBBgDcDXoB
+BgAgDhYOBgA2DnoBBgBPDnoBDgCGDtQBIgDfDr8OIgD3Dr8OBgAXDwAPBgBCDwAPBgBLDwAPAAAA
+AAEAAAAAAAEAAQABABAAMgA+AAUAAQABAAIAEABiAAAABQAGAAYAAQAQAHIAPgAFABMABwACABAA
+gwAAAAUAGAAMAAAAEACYAD4ABQAcAA0AAAAQAJ8APgAFACIADwAAABAAqAA+AAUAJAAQAAAAEAC3
+AD4ABQAkABIAAQAQAL4APgAFACQAFgACABAAyAAAAAUAKQAbAAEAEADWAD4ABQAyABwAAgAQAOEA
+AAAFADcAIQABABAA8AA+AAUARAAiAAIAEAABAQAABQBJACcAAAAQABYBIAEFAE0AKAAAARAATwEg
+AQkATwAsAAEAAABYAT4ADQBQAC8AAwEAAGMBAAARAFEANAADARAAVAoAAAUAVAA0AAMBEABUCgAA
+BQBVADYAAwEQAFQKAAAFAFYAOAADARAAVAoAAAUAVwA6AAMBEABUCgAABQBYADwAFgAeAhMAFgAo
+AhMAFgAzAhMAFgBDAhMAFgDgAjMABgARAxMABgAZAxMABgAlAxMABgA1AxMABgBLAxMABgBaAxMA
+BgBvAxMABgB+AxMABgCHAxMABgCTAxMABgCdAxMABgCrAxMABgC+AxMAFgAeAhMAFgAoAhMAFgAz
+AhMAFgBDAhMAFgDgAjMABgDNAxMABgDeAxMABgARAxMABgCrAxMAFgDwAxMAFgD/AxMAFgAOBBMA
+FgAnBBMAFgA1BBMAFgBABBMAFgBJBBMAFgBSBBMAFgAeAhMAFgAoAhMAFgAzAhMAFgBDAhMAFgDg
+AjMABgARAxMABgB+AxMABgBvAxMABgAlAxMABgAZAxMABgCEBBMABgCSBBMABgClBBMABgC2BBMA
+FgAeAhMAFgAoAhMAFgAzAhMAFgBDAhMAFgDgAjMABgARAxMABgB+AxMABgAZAxMABgBvAxMABgAl
+AxMABgDNBBMABgDdBBMABgDtBBMABgD7BBMABgAMBRMABgAdBRMABgAzBRMABgCrAxMAFgAeAhMA
+FgAoAhMAFgAzAhMAFgBDAhMAFgDgAjMABgBGBRMABgBVBRMABgARAxMABgCrAxMAEQCHBcIAEQC0
+BcYAEQD4BeQAEQBYDsIEBgZyBvoAVoB6Bv0AVoCCBv0ABgB2Cl8BBgB2Cl8BBgB2Cl8BBgB2Cl8B
+BgB2Cl8BUCAAAAAAlgCRAh8AAQDUIQAAAACWAPMCPAACAAQjAAAAAJYAAgNGAAIACCYAAAAAhhgL
+A0oAAgDUJQAAAACRGBwGRgACABAmAAAAAIYYCwNOAAIAiCYAAAAAlgCRAl8ADwAEJwAAAACWAPMC
+PAAQAJwnAAAAAJYAAgNGABAAoCoAAAAAhhgLA0oAEABsKgAAAACRGBwGRgAQAKgqAAAAAIYYCwNq
+ABAACysAAAAAhhgLA0oAFADNKgAAAACRGBwGRgAUABMrAAAAAIYYCwNKABQAHCsAAAAAlgBeBHIA
+FABxKwAAAACGGAsDSgAYAHwrAAAAAJYAawR6ABgAYCwAAAAAlgBrBIQAHgBMLQAAAACWAHkEjgAk
+APAtAAAAAIYYCwNKACYA+C0AAAAAlgCRApQAJgC4LgAAAACWAPMCPAAnAKQvAAAAAJYAAgNGACcA
+qDIAAAAAhhgLA0oAJwB0MgAAAACRGBwGRgAnALAyAAAAAIYYCwOfACcACDMAAAAAlgCRAqwAMACY
+NQAAAACWAPMCPAAxAMg2AAAAAJYAAgNGADEAzDkAAAAAhhgLA0oAMQCYOQAAAACRGBwGRgAxANQ5
+AAAAAIYYCwNOADEATDoAAAAAlgCRArcAPgDIOgAAAACWAPMCPAA/AGA7AAAAAJYAAgNGAD8AZD4A
+AAAAhhgLA0oAPwAwPgAAAACRGBwGRgA/AGw+AAAAAIYYCwNqAD8AkT4AAAAAgxgLA0oAQwCcPgAA
+AACTCMQFygBDANU+AAAAAJMI2AXPAEMA3D4AAAAAkwjkBdQAQwDkPgAAAACWCAgG6ABEAPc+AAAA
+AIYYCwNKAEQA6z4AAAAAkRgcBkYARAD/PgAAAACRGBwGRgBEABg/AAAAAJEATwbyAEQAiD8AAAAA
+hgBtBkoARgB4QAAAAACGGAsDSgBGAH8/AAAAAJEAPQ67BEYAwyIAAAAAhhgLA0oARwDMIgAAAACG
+AHsKaAFHAFonAAAAAIYYCwNKAEgAZCcAAAAAhgB7CqACSABjLwAAAACGGAsDSgBJAGwvAAAAAIYA
+ewpEA0kAhzYAAAAAhhgLA0oASgCQNgAAAACGAHsKtwNKAB47AAAAAIYYCwNKAEsAKDsAAAAAhgB7
+CiAESwAAAAEAigYAAAEAlAYAAAIAlwYAAAMAngYAAAQAqQYAAAUAugYAAAYAxAYAAAcA1AYAAAgA
+3gYAAAkA4gYAAAoA6QYAAAsA7gYAAAwA9wYAAA0ABQcAAAEAigYAAAEADwcAAAIAGwcAAAMAlAYA
+AAQA9wYAAAEAKAcAAAIAHgIAAAMANQcAAAQAPQcAAAEASQQAAAIAHgIAAAMATAcAAAQAVwcAAAUA
+YQcAAAYAaAcAAAEASQQAAAIAHgIAAAMATAcAAAQAVwcAAAUAYQcAAAYAbAcAAAEAdAcAAAIAfAcA
+AAEAigYAAAEAlAYAAAIA3gYAAAMA1AYAAAQAgQcAAAUAlwYAAAYAiQcAAAcAkgcAAAgAoAcAAAkA
+rAcAAAEAigYAAAEAlAYAAAIA3gYAAAMAlwYAAAQA1AYAAAUAngYAAAYAvgcAAAcAyQcAAAgA1AcA
+AAkA3QcAAAoA6QcAAAsA9QcAAAwABggAAA0A9wYAAAEAigYAAAEAFAgAAAIAHggAAAMAlAYAAAQA
+9wYAAAEAKggAAAEAMAgAAAIANwgAAAEASA4AAAEAigoAAAEAigoAAAEAigoAAAEAigoAAAEAigpp
+AAsDCwFxAAsDCwF5AAsDCwGBAAsDCwGJAAsDCwGRAAsDCwGZAAsDCwGhAAsDCwGpAAsDCwGxAAsD
+CwG5AAsDEAHBAAsDSgAMAAsDSgDJAAoKHAEJABMKIQHRACMKJQHZAEAKKwHhABMKMQEMAEsKNgHJ
+AE8KPAEUAEsKVwEJAAsDSgDxAKMKbgEcALUKfQHxAMgKggEJAdwKigHhAOUKmQERAQsDCwEZAQsL
+SgAhAQsDngEhAR4LpgEpAQsDCwEpAUsLqwE5AWMLCwE5AX8LsQExAY8LuAEMAJ4LvQExAagLEAEU
+AMYLwQEkANQL1gExAfoL4QEcAAkM5wEsAAsD9QFhAUsM+wFhAVIMHAJRAUsKLgIkAH0MPAGBAZIM
+SgA5AZoMvQHRAKoMOwKJAb0MIQGJAckMIQHRANgMQALRAN8MvQHRAOoMRgIUAAsDSgCRAQsDSgA0
+AAsDSgA0AEsKNgE0AJ4LvQE8AAsD9QGZARMKIQExAQsD/QLRABUNEwNEAAsDSgBEAEsKNgFEAJ4L
+vQFMAAsD9QFUAAsDSgBUAEsKNgFUAJ4LvQFcAAsD9QFkAAsDSgBkAEsKNgFkAJ4LvQFsAAsD9QGh
+AQsDSgDxAE0NdwRJAAsDfASpAQsDiAQRAAsDSgC5AQsDSgDBAcoNmATJAQsD9QHBAfANngRhAAQO
+IQHRAA0OpQTRASUOqgRZAC0OsATZAX8OSgAZAJgOzATpAekO0gTxAQoK2AT5AQkM3wTRANgMqgR0
+AAsDSgDZAQsD9QF0AEsKNgEBAgsDSgABAicPEAF8AAsD9QEJAl4P9ATpAWYPEAEZAAsDSgAIAEgB
+AQEIAEwBBgEpAIMCjwQuAFsAxQUuABMAaQUuABsAkgUuAEMAkgUuAGMAzgUuAAsAIQUuACMAkgUu
+ACsAmAUuADMAaQUuADsApgVJAIMCjwQDAmsCBgFDApMCBgGDAssBBgGjAssBBgHDAssBBgHjAssB
+BgEDA8sBBgFgBssBBgHhCcsBBgEBCssBBgFAAY8BTAKVArUC9wIFAxkDKAM7A1kDogPMAxUENQSD
+BLYEEgUQAAEAEQADAAAAdwXaAAAA8AXfAAAAFAbtAAIAKQADAAIAKgAFAAEAKwAFAAIALAAHABUB
+TwF1Ac0B7AGOAqYCNANKA5sDvQMOBCYE4wTrBASAAAABAAAA+RhYaQAAAAAAALoJAAAEAAAAAAAA
+AAAAAAABAHEBAAAAAAQAAAAAAAAAAAAAAAEAegEAAAAACwAAAAAAAAAAAAAACgC1AQAAAAACAAIA
+BQAAAAAAAAAWAHkCAAAAAAQAcAADAAAAAAAAACoAqAIAAAAABAAAAAAAAAAAAAAAAQDeCQAAAAAE
+AAAAAAAAAAAAAAABABoMAAAAAAsAAAAAAAAAAAAAAAoAoA4AAAAAAAAAAAEAAAB1DwAAAwACAAUA
+BAALAAoADQAMAA8ADgATABIAFAACABUABAAWAAoAFwAMABgADgBZABYCWwAqAlkArwJZAFMDWQDG
+A1kALwTNAAwFAAAAAAA8TW9kdWxlPgBTVF83M2YwN2I0MGEwNjI0ZWU4OTdhZTdmYmE1MTFhZGUz
+NS5kbGwAQVBQT0lOVE1FTlQAU1RfMTNjYTNhMTc2YTQ4NDU1NDlmNjZiYjQ5MzhkMzU3OGQAQVBQ
+T0lOVE1FTlRfUm93AENBTklORV9CUkVFRF9NQVAAQ0FOSU5FX0JSRUVEX01BUF9Sb3cAQ29uZmln
+AENvbnN0YW50AEVtYWlsX1RlbXBsYXRlAEhlbHBlcgBNSUNST0NISVAATUlDUk9DSElQX1JvdwBQ
+RVRfT1dORVJTAFBFVF9PV05FUlNfUm93AFZJX0JSRUVEX0NBVF9NQVAAVklfQlJFRURfQ0FUX01B
+UF9Sb3cAUmVzb3VyY2VzAFNUXzEzY2EzYTE3NmE0ODQ1NTQ5ZjY2YmI0OTM4ZDM1NzhkLlByb3Bl
+cnRpZXMAU2V0dGluZ3MAU2NyaXB0TWFpbgBTY3JpcHRSZXN1bHRzAG1zY29ybGliAFN5c3RlbQBP
+YmplY3QAU3lzdGVtLkNvbmZpZ3VyYXRpb24AQXBwbGljYXRpb25TZXR0aW5nc0Jhc2UATWljcm9z
+b2Z0LlNxbFNlcnZlci5TY3JpcHRUYXNrAE1pY3Jvc29mdC5TcWxTZXJ2ZXIuRHRzLlRhc2tzLlNj
+cmlwdFRhc2sAVlNUQVJUU2NyaXB0T2JqZWN0TW9kZWxCYXNlAEVudW0AVGFza19OYW1lAFN0YWdl
+X05hbWUAUEdfc2VsZWN0X3F1ZXJ5AE9yYWNsZV9VcGRhdGVfcXVlcnkAU3lzdGVtLkNvbGxlY3Rp
+b25zLkdlbmVyaWMATGlzdGAxAE5wZ3NxbABOcGdzcWxEYXRhUmVhZGVyAFByZXBfTGlzdABEaWN0
+aW9uYXJ5YDIAT3JhY2xlLkRhdGFBY2Nlc3MAT3JhY2xlLkRhdGFBY2Nlc3MuQ2xpZW50AE9yYWNs
+ZURiVHlwZQBPcmFjbGVfQ29sdW1uc19EaWMAZ2V0X0RpY3Rpb25hcnkATG9hZERhdGEALmN0b3IA
+cEluc19JRABwSW5zX1BNU19JRABwSW5zX1BBVElFTlRfSUQAcEluc19BUFBPSU5UTUVOVF9EQVRF
+AHBJbnNfVElNRU9GREFZAHBJbnNfUE1TX1BST1ZJREVSX0lEAHBJbnNfQ0xJRU5UX0lEAHBJbnNf
+SElEAHBJbnNfUkVBU09OAHBJbnNfTk9URQBwSW5zX0RVUkFUSU9OAHBJbnNfREFURV9NT0RJRklF
+RABwSW5zX0lTX0FDVElWRQBwSW5zX1ZJX0JSRUVEX0lEAHBJbnNfQVJUSUNMRV9OQU1FAE5wZ3Nx
+bF9Db25uU3RyAE9yYWNsZV9Db25uU3RyAE9yYWNsZV9TZW5kRW1haWxfQ29ublN0cgBETExfRGly
+ZWN0b3J5AEVtYWlsX0Zyb20ARW1haWxfVG8AR3JvdXBfSUQATWFjaGluZU5hbWUARXJyb3JfUmVw
+b3J0AFRhYmxlX0xvZ2dpbmcAU2VuZF9FbWFpbABwSW5zX1ZJU0lUX0lEAHBJbnNfQ0hJUFBJTkdf
+REFURQBwSW5zX0NISVBfTlVNQkVSAHBJbnNfQ0hJUF9NQU5VRkFDVFVSRVIAcEluc19QRVJDRU5U
+QUdFAHBJbnNfQkVHSU5fREFURQBwSW5zX0VORF9EQVRFAHBJbnNfSVNfUFJFVklPVVMAcEluc19D
+UkVBVEVfREFURQBwSW5zX0RFQUNUSVZBVEVEX0RBVEUAcEluc19BUFBFQVJFRF9EQVRFAHBJbnNf
+TE9PS1VQX0lEAHBJbnNfQ0FURUdPUllfSUQAU3lzdGVtLlJlc291cmNlcwBSZXNvdXJjZU1hbmFn
+ZXIAcmVzb3VyY2VNYW4AU3lzdGVtLkdsb2JhbGl6YXRpb24AQ3VsdHVyZUluZm8AcmVzb3VyY2VD
+dWx0dXJlAGdldF9SZXNvdXJjZU1hbmFnZXIAZ2V0X0N1bHR1cmUAc2V0X0N1bHR1cmUAQ3VsdHVy
+ZQBkZWZhdWx0SW5zdGFuY2UAZ2V0X0RlZmF1bHQARGVmYXVsdAAuY2N0b3IAU3lzdGVtLlJlZmxl
+Y3Rpb24AQXNzZW1ibHkAUmVzb2x2ZUV2ZW50QXJncwBDdXJyZW50RG9tYWluX0Fzc2VtYmx5UmVz
+b2x2ZQBNYWluAHZhbHVlX18AU3VjY2VzcwBGYWlsdXJlAG5wZ1JlYWRlcgBJRABQTVNfSUQAUEFU
+SUVOVF9JRABBUFBPSU5UTUVOVF9EQVRFAFRJTUVPRkRBWQBQTVNfUFJPVklERVJfSUQAQ0xJRU5U
+X0lEAEhJRABSRUFTT04ATk9URQBEVVJBVElPTgBEQVRFX01PRElGSUVEAElTX0FDVElWRQBWSV9C
+UkVFRF9JRABBUlRJQ0xFX05BTUUATWFjaGluZV9OYW1lAEVycl9Nc2cARXJyX1N0YWNrVHJhY2UA
+U3RhZ2VfbmFtZQBTdGFydF9EVE0AU3RhdHVzAENOVABDb21tZW50AFN1YmplY3QAYm9keQBQQVRJ
+RU5UAFZJU0lUX0lEAENISVBQSU5HX0RBVEUAQ0hJUF9OVU1CRVIAQ0hJUF9NQU5VRkFDVFVSRVIA
+UEVSQ0VOVEFHRQBCRUdJTl9EQVRFAEVORF9EQVRFAElTX1BSRVZJT1VTAENSRUFURV9EQVRFAERF
+QUNUSVZBVEVEX0RBVEUAQVBQRUFSRURfREFURQBMT09LVVBfSUQAQ0FURUdPUllfSUQAdmFsdWUA
+c2VuZGVyAGFyZ3MAU3lzdGVtLlJ1bnRpbWUuVmVyc2lvbmluZwBUYXJnZXRGcmFtZXdvcmtBdHRy
+aWJ1dGUAQXNzZW1ibHlUaXRsZUF0dHJpYnV0ZQBBc3NlbWJseURlc2NyaXB0aW9uQXR0cmlidXRl
+AEFzc2VtYmx5Q29uZmlndXJhdGlvbkF0dHJpYnV0ZQBBc3NlbWJseUNvbXBhbnlBdHRyaWJ1dGUA
+QXNzZW1ibHlQcm9kdWN0QXR0cmlidXRlAEFzc2VtYmx5Q29weXJpZ2h0QXR0cmlidXRlAEFzc2Vt
+Ymx5VHJhZGVtYXJrQXR0cmlidXRlAEFzc2VtYmx5Q3VsdHVyZUF0dHJpYnV0ZQBBc3NlbWJseVZl
+cnNpb25BdHRyaWJ1dGUAU3lzdGVtLlJ1bnRpbWUuQ29tcGlsZXJTZXJ2aWNlcwBDb21waWxhdGlv
+blJlbGF4YXRpb25zQXR0cmlidXRlAFJ1bnRpbWVDb21wYXRpYmlsaXR5QXR0cmlidXRlAFNUXzcz
+ZjA3YjQwYTA2MjRlZTg5N2FlN2ZiYTUxMWFkZTM1AFN5c3RlbS5EYXRhAFN5c3RlbS5EYXRhLkNv
+bW1vbgBEYkRhdGFSZWFkZXIAZ2V0X0l0ZW0AVG9TdHJpbmcAU3RyaW5nAG9wX0VxdWFsaXR5AENv
+bnZlcnQARGF0ZVRpbWUAVG9EYXRlVGltZQBBZGQAUmVhZAA8PmNfX0Rpc3BsYXlDbGFzczIAS2V5
+VmFsdWVQYWlyYDIAaXRlbQA8TG9hZERhdGE+Yl9fMABjAFR5cGUAUnVudGltZVR5cGVIYW5kbGUA
+R2V0VHlwZUZyb21IYW5kbGUAZ2V0X0tleQBNZW1iZXJJbmZvAEdldE1lbWJlcgBGaWVsZEluZm8A
+R2V0VmFsdWUAZ2V0X05vdwBOcGdzcWxDb25uZWN0aW9uAERiQ29ubmVjdGlvbgBPcGVuAE5wZ3Nx
+bENvbW1hbmQARXhlY3V0ZVJlYWRlcgBPcmFjbGVDb25uZWN0aW9uAE9yYWNsZUNvbW1hbmQAQ3Jl
+YXRlQ29tbWFuZABEYkNvbW1hbmQAc2V0X0NvbW1hbmRUZXh0AENvbW1hbmRUeXBlAHNldF9Db21t
+YW5kVHlwZQBzZXRfQmluZEJ5TmFtZQBnZXRfQ291bnQAc2V0X0FycmF5QmluZENvdW50AEVudW1l
+cmF0b3IAR2V0RW51bWVyYXRvcgBnZXRfQ3VycmVudABPcmFjbGVQYXJhbWV0ZXJDb2xsZWN0aW9u
+AGdldF9QYXJhbWV0ZXJzAGdldF9WYWx1ZQBGdW5jYDIAU3lzdGVtLkNvcmUAU3lzdGVtLkxpbnEA
+RW51bWVyYWJsZQBJRW51bWVyYWJsZWAxAFNlbGVjdABUb0FycmF5AE9yYWNsZVBhcmFtZXRlcgBQ
+YXJhbWV0ZXJEaXJlY3Rpb24ATW92ZU5leHQASURpc3Bvc2FibGUARGlzcG9zZQBFeGVjdXRlTm9u
+UXVlcnkAUGFkUmlnaHQARXhjZXB0aW9uAGdldF9NZXNzYWdlAGdldF9TdGFja1RyYWNlAENvbmNh
+dABnZXRfTGVuZ3RoAFN1YnN0cmluZwBDb21waWxlckdlbmVyYXRlZEF0dHJpYnV0ZQBJbnQzMgBS
+ZXBsYWNlAFN5c3RlbS5EaWFnbm9zdGljcwBEZWJ1Z2dlck5vblVzZXJDb2RlQXR0cmlidXRlAGdl
+dF9Bc3NlbWJseQBTeXN0ZW0uQ29tcG9uZW50TW9kZWwARWRpdG9yQnJvd3NhYmxlQXR0cmlidXRl
+AEVkaXRvckJyb3dzYWJsZVN0YXRlAFNTSVNTY3JpcHRUYXNrRW50cnlQb2ludEF0dHJpYnV0ZQBB
+cHBEb21haW4AZ2V0X0N1cnJlbnREb21haW4AUmVzb2x2ZUV2ZW50SGFuZGxlcgBhZGRfQXNzZW1i
+bHlSZXNvbHZlAGdldF9OYW1lAENvbnRhaW5zAFN5c3RlbS5JTwBQYXRoAENvbWJpbmUATG9hZEZp
+bGUAQWN0aW9uADxNYWluPmJfXzAAbWV0aG9kAEFjdGlvbmAxAENTJDw+OV9fQ2FjaGVkQW5vbnlt
+b3VzTWV0aG9kRGVsZWdhdGUxAEludm9rZQBTY3JpcHRPYmplY3RNb2RlbABnZXRfRHRzAE1pY3Jv
+c29mdC5TcWxTZXJ2ZXIuTWFuYWdlZERUUwBNaWNyb3NvZnQuU3FsU2VydmVyLkR0cy5SdW50aW1l
+AFZhcmlhYmxlcwBnZXRfVmFyaWFibGVzAFZhcmlhYmxlAFN5c3RlbS5UaHJlYWRpbmcuVGFza3MA
+UGFyYWxsZWxPcHRpb25zAHNldF9NYXhEZWdyZWVPZlBhcmFsbGVsaXNtAFBhcmFsbGVsAFBhcmFs
+bGVsTG9vcFJlc3VsdABGb3JFYWNoAHNldF9UYXNrUmVzdWx0AFNUXzEzY2EzYTE3NmE0ODQ1NTQ5
+ZjY2YmI0OTM4ZDM1NzhkLlByb3BlcnRpZXMuUmVzb3VyY2VzLnJlc291cmNlcwAABUkARAAADVAA
+TQBTAF8ASQBEAAAVUABBAFQASQBFAE4AVABfAEkARAAACUQAQQBUAEUAAAEAE2QAZAAtAE0ATQBN
+AC0AeQB5AAETVABJAE0ARQBPAEYARABBAFkAABFIAEgAOgBtAG0AOgBzAHMAAB9QAE0AUwBfAFAA
+UgBPAFYASQBEAEUAUgBfAEkARAAAE0MATABJAEUATgBUAF8ASQBEAAAHSABJAEQAAA1SAEUAQQBT
+AE8ATgAACU4ATwBUAEUAABFEAFUAUgBBAFQASQBPAE4AABtEAEEAVABFAF8ATQBPAEQASQBGAEkA
+RQBEAAA5ZABkAC0ATQBNAE0ALQB5AHkAIABoAGgAOgBtAG0AOgBzAHMALgBmAGYAZgBmAGYAZgAg
+AHQAdAABE0kAUwBfAEEAQwBUAEkAVgBFAAALRgBhAGwAcwBlAAADMQAAAzAAAA9wAEkAbgBzAF8A
+SQBEAAAXcABJAG4AcwBfAFAATQBTAF8ASQBEAAAfcABJAG4AcwBfAFAAQQBUAEkARQBOAFQAXwBJ
+AEQAACtwAEkAbgBzAF8AQQBQAFAATwBJAE4AVABNAEUATgBUAF8ARABBAFQARQAAHXAASQBuAHMA
+XwBUAEkATQBFAE8ARgBEAEEAWQAAKXAASQBuAHMAXwBQAE0AUwBfAFAAUgBPAFYASQBEAEUAUgBf
+AEkARAAAHXAASQBuAHMAXwBDAEwASQBFAE4AVABfAEkARAAAEXAASQBuAHMAXwBIAEkARAAAF3AA
+SQBuAHMAXwBSAEUAQQBTAE8ATgAAE3AASQBuAHMAXwBOAE8AVABFAAAbcABJAG4AcwBfAEQAVQBS
+AEEAVABJAE8ATgAAJXAASQBuAHMAXwBEAEEAVABFAF8ATQBPAEQASQBGAEkARQBEAAAdcABJAG4A
+cwBfAEkAUwBfAEEAQwBUAEkAVgBFAAA3ZABkAC0ATQBNAE0ALQB5AHkAIABoADoAbQBtADoAcwBz
+AC4AZgBmAGYAZgBmAGYAIAB0AHQAAQ9TAHUAYwBjAGUAZQBkAAARTQBhAGMAaABpAG4AZwA6AAAF
+CgAKAAALVABhAHMAawA6AAAdRQByAHIAbwByACAATQBlAHMAcwBhAGcAZQA6AAAjRQByAHIAbwBy
+ACAAUwB0AGEAYwBrAFQAcgBhAGMAZQA6AAALRQByAHIAbwByAABDRABhAGkAbAB5AEQAZQBsAHQA
+YQAgAHAAYQBjAGsAYQBnAGUAIABmAGEAaQBsAHUAcgBlACAAcgBlAHAAbwByAHQAAC1MAG8AYQBk
+ACAAVABhAGIAbABlACAAYQBwAHAAbwBpAG4AdABtAGUAbgB0AAAtcwB0AGEAZwBlAF8AMQBfAEwA
+bwBhAGQAXwBTAHQAZwBfAFQAYQBiAGwAZQAAW3MAZQBsAGUAYwB0ACAAKgAgAGYAcgBvAG0AIABw
+AHUAYgBsAGkAYwAuAGEAcABwAG8AaQBuAHQAbQBlAG4AdAAgAGwAaQBtAGkAdAAgADEAMAAwADAA
+MAAwAACC32kAbgBzAGUAcgB0ACAAaQBuAHQAbwAgAEQARABfAFAARwBTAFEATABfAEEAUABQAE8A
+SQBOAFQATQBFAE4AVAAgACgASQBEACwAUABNAFMAXwBJAEQALABQAEEAVABJAEUATgBUAF8ASQBE
+ACwAQQBQAFAATwBJAE4AVABNAEUATgBUAF8ARABBAFQARQAsAFQASQBNAEUATwBGAEQAQQBZACwA
+UABNAFMAXwBQAFIATwBWAEkARABFAFIAXwBJAEQALABDAEwASQBFAE4AVABfAEkARAAsAEgASQBE
+ACwAUgBFAEEAUwBPAE4ALABOAE8AVABFACwARABVAFIAQQBUAEkATwBOACwARABBAFQARQBfAE0A
+TwBEAEkARgBJAEUARAAsAEkAUwBfAEEAQwBUAEkAVgBFACkAIAB2AGEAbAB1AGUAcwAgACgAOgBw
+AEkAbgBzAF8ASQBEACwAOgBwAEkAbgBzAF8AUABNAFMAXwBJAEQALAA6AHAASQBuAHMAXwBQAEEA
+VABJAEUATgBUAF8ASQBEACwAOgBwAEkAbgBzAF8AQQBQAFAATwBJAE4AVABNAEUATgBUAF8ARABB
+AFQARQAsADoAcABJAG4AcwBfAFQASQBNAEUATwBGAEQAQQBZACwAOgBwAEkAbgBzAF8AUABNAFMA
+XwBQAFIATwBWAEkARABFAFIAXwBJAEQALAA6AHAASQBuAHMAXwBDAEwASQBFAE4AVABfAEkARAAs
+ADoAcABJAG4AcwBfAEgASQBEACwAOgBwAEkAbgBzAF8AUgBFAEEAUwBPAE4ALAA6AHAASQBuAHMA
+XwBOAE8AVABFACwAOgBwAEkAbgBzAF8ARABVAFIAQQBUAEkATwBOACwAOgBwAEkAbgBzAF8ARABB
+AFQARQBfAE0ATwBEAEkARgBJAEUARAAsADoAcABJAG4AcwBfAEkAUwBfAEEAQwBUAEkAVgBFACkA
+ABdWAEkAXwBCAFIARQBFAEQAXwBJAEQAABlBAFIAVABJAEMATABFAF8ATgBBAE0ARQAAIXAASQBu
+AHMAXwBWAEkAXwBCAFIARQBFAEQAXwBJAEQAACNwAEkAbgBzAF8AQQBSAFQASQBDAEwARQBfAE4A
+QQBNAEUAADdMAG8AYQBkACAAVABhAGIAbABlACAAQwBBAE4ASQBOAEUAXwBCAFIARQBFAEQAXwBN
+AEEAUAAAZXMAZQBsAGUAYwB0ACAAKgAgAGYAcgBvAG0AIABwAHUAYgBsAGkAYwAuAEMAQQBOAEkA
+TgBFAF8AQgBSAEUARQBEAF8ATQBBAFAAIABsAGkAbQBpAHQAIAAxADAAMAAwADAAMAAAgTlpAG4A
+cwBlAHIAdAAgAGkAbgB0AG8AIABEAEQAXwBQAEcAUwBRAEwAXwBDAEEATgBJAE4ARQBfAEIAUgBF
+AEUARABfAE0AQQBQACAAKABWAEkAXwBCAFIARQBFAEQAXwBJAEQALABBAFIAVABJAEMATABFAF8A
+TgBBAE0ARQAsAEkARAAsAEQAQQBUAEUAXwBNAE8ARABJAEYASQBFAEQAKQAgAHYAYQBsAHUAZQBz
+ACAAKAA6AHAASQBuAHMAXwBWAEkAXwBCAFIARQBFAEQAXwBJAEQALAA6AHAASQBuAHMAXwBBAFIA
+VABJAEMATABFAF8ATgBBAE0ARQAsADoAcABJAG4AcwBfAEkARAAsADoAcABJAG4AcwBfAEQAQQBU
+AEUAXwBNAE8ARABJAEYASQBFAEQAKQAAgTtTAGUAcgB2AGUAcgA9AHkAYQAtAHYAcwBkAGIAcgBh
+AHcAcAByAG8AZAAtADAAMQAtAG4AYQB0AC4AdgBjAGEAYQBuAHQAZQBjAGgALgBjAG8AbQA7AEQA
+YQB0AGEAYgBhAHMAZQA9AHAAbQBzAF8AcgBhAHcAOwBVAHMAZQByACAASQBEAD0AZABhAGkAbAB5
+AGQAZQBsAHQAYQBfAGQAZQB2ADsAUABhAHMAcwB3AG8AcgBkAD0AVABpAG0AbwB0AGgAeQA2ADoA
+MQA3ADsAVABpAG0AZQBvAHUAdAA9ADEAMAAwADAAOwBDAG8AbQBtAGEAbgBkAFQAaQBtAGUAbwB1
+AHQAPQAxADAAMAAwADsAcAByAGUAbABvAGEAZAAgAHIAZQBhAGQAZQByAD0AdAByAHUAZQA7AAGA
+n1UAcwBlAHIAIABJAGQAPQB2AGUAYwB0AG8AcgBfAGQAZQB2ADsAUABhAHMAcwB3AG8AcgBkAD0A
+SgBvAGgAbgAxADYAOgAyADAAOwBEAGEAdABhACAAUwBvAHUAcgBjAGUAPQBEAEIAUgBBAFcAOwBD
+AG8AbgBuAGUAYwB0AGkAbwBuACAAVABpAG0AZQBvAHUAdAA9ADEAMAAwADAAAICdVQBzAGUAcgAg
+AEkAZAA9AGMAXwBtAGUAcgBpAGEAbABfAGQAZQB2ADsAUABhAHMAcwB3AG8AcgBkAD0AYwBtAGQA
+ZQB2ACEAOwBEAGEAdABhACAAUwBvAHUAcgBjAGUAPQBEAEIAUgBBAFcAOwBDAG8AbgBuAGUAYwB0
+AGkAbwBuACAAVABpAG0AZQBvAHUAdAA9ADEAMAAwADAAAEdDADoAXABCAEkAUAByAG8AagBlAGMA
+dABcAEQAYQBpAGwAeQBEAGUAbAB0AGEAXABDAHUAcwB0AG8AbQBEAGwAbABzAFwAAEtEAGEAaQBs
+AHkARABlAGwAdABhAF8AUAByAG8AagBlAGMAdABAAEgAZQBuAHIAeQBTAGMAaABlAGkAbgBWAGUA
+dAAuAGMAbwBtAAAxWQBTAGgAZQBuAEAASABlAG4AcgB5AFMAYwBoAGUAaQBuAFYAZQB0AC4AYwBv
+AG0AAILRPAAhAEQATwBDAFQAWQBQAEUAIABoAHQAbQBsAD4APABoAHQAbQBsAD4APABzAHQAeQBs
+AGUAPgB0AGEAYgBsAGUALAAgAHQAaAAsACAAdABkACAAewAgACAAIAAgAGIAbwByAGQAZQByADoA
+IAAxAHAAeAAgAHMAbwBsAGkAZAAgAGIAbABhAGMAawA7ACAAIAAgACAAYgBvAHIAZABlAHIALQBj
+AG8AbABsAGEAcABzAGUAOgAgAGMAbwBsAGwAYQBwAHMAZQA7AH0APAAvAHMAdAB5AGwAZQA+ADwA
+YgBvAGQAeQA+ADwAaAAzACAAPgBEAGEAaQBsAHkARABlAGwAdABhACAAUAByAG8AagBlAGMAdAAg
+AFAAYQBjAGsAYQBnAGUAIABGAGEAaQBsAHUAcgBlACAAUgBlAHAAbwByAHQAPAAvAGgAMwA+ADwA
+cAA+AEgAZQBsAGwAbwAsADwALwBwAD4APABwAD4APAAvAHAAPgA8AHAAPgBEAGEAaQBsAHkARABl
+AGwAdABhACAAUABhAGMAawBhAGcAZQAgAGYAYQBpAGwAZQBkACwAIABoAGUAcgBlACAAaQBzACAA
+dABoAGUAIABmAGEAaQBsAHUAcgBlACAAZABlAHQAYQBpAGwALgA8AC8AcAA+ADwAcAA+ADwALwBw
+AD4APAAhAC0ALQA8AHAAIAAgAHMAdAB5AGwAZQA9ACIAYwBvAGwAbwByADoAcgBlAGQAOwAiAD4A
+RQByAHIAIABNAGUAcwBzAGEAZwBlADwALwBwAD4ALQAtAD4APAB0AGEAYgBsAGUAIABzAHQAeQBs
+AGUAPQAiAHcAaQBkAHQAaAA6ADEAMAAwACUAIgA+ACAAIAA8AHQAcgA+ACAAIAAgACAAPAB0AGQA
+PgBNAGEAYwBoAGkAbgBnADwALwB0AGQAPgAgACAAIAAgADwAdABkAD4AAVk8AC8AdABkAD4AIAAg
+ACAAPAAvAHQAcgA+ACAAIAA8AHQAcgA+ACAAIAAgACAAPAB0AGQAPgBUAGEAcwBrADwALwB0AGQA
+PgAgACAAIAAgADwAdABkAD4AAGs8AC8AdABkAD4AIAAgACAAPAAvAHQAcgA+ACAAIAA8AHQAcgA+
+ACAAIAAgACAAPAB0AGQAPgBFAHIAcgBvAHIAIABNAGUAcwBzAGEAZwBlADwALwB0AGQAPgAgACAA
+IAAgADwAdABkAD4AAHU8AC8AdABkAD4AIAAgACAAPAAvAHQAcgA+ACAAIAAgACAAPAB0AHIAPgAg
+ACAAIAAgADwAdABkAD4ARQByAHIAbwByACAAUwB0AGEAYwBrAFQAcgBhAGMAZQA8AC8AdABkAD4A
+IAAgACAAIAA8AHQAZAA+AABHPAAvAHQAZAA+ACAAIAAgADwALwB0AHIAPgA8AC8AdABhAGIAbABl
+AD4APAAvAGIAbwBkAHkAPgA8AC8AaAB0AG0AbAA+AACA22kAbgBzAGUAcgB0ACAAaQBuAHQAbwAg
+AEQARABfAEQAYQBpAGwAeQBEAGUAbAB0AGEAXwBMAG8AZwBnAGkAbgBnACAAKABHAHIAbwB1AHAA
+XwBJAEQALABTAHQAYQBnAGUAXwBOAGEAbQBlACwAVABhAHMAawBfAE4AYQBtAGUALABTAHQAYQBy
+AHQAXwBEAFQATQAsAEUAbgBkAF8ARABUAE0ALABTAHQAYQB0AHUAcwAsAEMAbwBtAG0AZQBuAHQA
+cwApACAAdgBhAGwAdQBlAHMAIAAoACcAAQcnACwAJwABMycALAAnAFIAZQBjAG8AcgBkAHMAIABM
+AG8AYQBkAGUAZAAvAE0AZQByAGcAZQBkADoAAQUnACkAAVFCAEUARwBJAE4AIABjAF8AbQBlAHIA
+aQBhAGwALgBlAG0AYQBpAGwAXwBwAGsAZwAuAFAAUgBfAFMARQBOAEQAXwBFAE0AQQBJAEwAKAAn
+AAEJJwAgACwAJwABDScALAAnACcALAAnAAEdJwAsACcAJwAsACcAJwApADsAIABFAE4ARAA7AAER
+VgBJAFMASQBUAF8ASQBEAAAbQwBIAEkAUABQAEkATgBHAF8ARABBAFQARQAAF0MASABJAFAAXwBO
+AFUATQBCAEUAUgAAI0MASABJAFAAXwBNAEEATgBVAEYAQQBDAFQAVQBSAEUAUgAAG3AASQBuAHMA
+XwBWAEkAUwBJAFQAXwBJAEQAACVwAEkAbgBzAF8AQwBIAEkAUABQAEkATgBHAF8ARABBAFQARQAA
+IXAASQBuAHMAXwBDAEgASQBQAF8ATgBVAE0AQgBFAFIAAC1wAEkAbgBzAF8AQwBIAEkAUABfAE0A
+QQBOAFUARgBBAEMAVABVAFIARQBSAAA1TABvAGEAZAAgAFQAYQBiAGwAZQAgAFAARwBTAFEATABf
+AE0ASQBDAFIATwBDAEgASQBQAABtcwBlAGwAZQBjAHQAIAAqACAAZgByAG8AbQAgAHAAbQBzAF8A
+ZQB4AHQAZQBuAGQAZQBkAF8AZABhAHQAYQAuAG0AaQBjAHIAbwBjAGgAaQBwACAAbABpAG0AaQB0
+ACAAMQAwADAAMAAwADAAAIIfaQBuAHMAZQByAHQAIABpAG4AdABvACAARABEAF8AUABHAFMAUQBM
+AF8ATQBJAEMAUgBPAEMASABJAFAAIAAoAEkARAAsAEgASQBEACwAQwBMAEkARQBOAFQAXwBJAEQA
+LABQAEEAVABJAEUATgBUAF8ASQBEACwAUABNAFMAXwBJAEQALABWAEkAUwBJAFQAXwBJAEQALABD
+AEgASQBQAFAASQBOAEcAXwBEAEEAVABFACwAQwBIAEkAUABfAE4AVQBNAEIARQBSACwAQwBIAEkA
+UABfAE0AQQBOAFUARgBBAEMAVABVAFIARQBSACkAIAB2AGEAbAB1AGUAcwAgACgAOgBwAEkAbgBz
+AF8ASQBEACwAOgBwAEkAbgBzAF8ASABJAEQALAA6AHAASQBuAHMAXwBDAEwASQBFAE4AVABfAEkA
+RAAsADoAcABJAG4AcwBfAFAAQQBUAEkARQBOAFQAXwBJAEQALAA6AHAASQBuAHMAXwBQAE0AUwBf
+AEkARAAsADoAcABJAG4AcwBfAFYASQBTAEkAVABfAEkARAAsADoAcABJAG4AcwBfAEMASABJAFAA
+UABJAE4ARwBfAEQAQQBUAEUALAA6AHAASQBuAHMAXwBDAEgASQBQAF8ATgBVAE0AQgBFAFIALAA6
+AHAASQBuAHMAXwBDAEgASQBQAF8ATQBBAE4AVQBGAEEAQwBUAFUAUgBFAFIAKQAAFVAARQBSAEMA
+RQBOAFQAQQBHAEUAABVCAEUARwBJAE4AXwBEAEEAVABFAAARRQBOAEQAXwBEAEEAVABFAAAXSQBT
+AF8AUABSAEUAVgBJAE8AVQBTAAAXQwBSAEUAQQBUAEUAXwBEAEEAVABFAAAhRABFAEEAQwBUAEkA
+VgBBAFQARQBEAF8ARABBAFQARQAAG0EAUABQAEUAQQBSAEUARABfAEQAQQBUAEUAAB9wAEkAbgBz
+AF8AUABFAFIAQwBFAE4AVABBAEcARQAAH3AASQBuAHMAXwBCAEUARwBJAE4AXwBEAEEAVABFAAAb
+cABJAG4AcwBfAEUATgBEAF8ARABBAFQARQAAIXAASQBuAHMAXwBJAFMAXwBQAFIARQBWAEkATwBV
+AFMAACFwAEkAbgBzAF8AQwBSAEUAQQBUAEUAXwBEAEEAVABFAAArcABJAG4AcwBfAEQARQBBAEMA
+VABJAFYAQQBUAEUARABfAEQAQQBUAEUAACVwAEkAbgBzAF8AQQBQAFAARQBBAFIARQBEAF8ARABB
+AFQARQAAK0wAbwBhAGQAIABUAGEAYgBsAGUAIABQAEUAVABfAE8AVwBOAEUAUgBTAABZcwBlAGwA
+ZQBjAHQAIAAqACAAZgByAG8AbQAgAHAAdQBiAGwAaQBjAC4AUABFAFQAXwBPAFcATgBFAFIAUwAg
+AGwAaQBtAGkAdAAgADEAMAAwADAAMAAwAACDDWkAbgBzAGUAcgB0ACAAaQBuAHQAbwAgAEQARABf
+AFAARwBTAFEATABfAFAARQBUAF8ATwBXAE4ARQBSAFMAIAAoAEkARAAsAEgASQBEACwAUABNAFMA
+XwBJAEQALABDAEwASQBFAE4AVABfAEkARAAsAFAAQQBUAEkARQBOAFQAXwBJAEQALABQAEUAUgBD
+AEUATgBUAEEARwBFACwAQgBFAEcASQBOAF8ARABBAFQARQAsAEUATgBEAF8ARABBAFQARQAsAEkA
+UwBfAFAAUgBFAFYASQBPAFUAUwAsAEMAUgBFAEEAVABFAF8ARABBAFQARQAsAEQARQBBAEMAVABJ
+AFYAQQBUAEUARABfAEQAQQBUAEUALABBAFAAUABFAEEAUgBFAEQAXwBEAEEAVABFACwARABBAFQA
+RQBfAE0ATwBEAEkARgBJAEUARAApACAAdgBhAGwAdQBlAHMAIAAoADoAcABJAG4AcwBfAEkARAAs
+ADoAcABJAG4AcwBfAEgASQBEACwAOgBwAEkAbgBzAF8AUABNAFMAXwBJAEQALAA6AHAASQBuAHMA
+XwBDAEwASQBFAE4AVABfAEkARAAsADoAcABJAG4AcwBfAFAAQQBUAEkARQBOAFQAXwBJAEQALAA6
+AHAASQBuAHMAXwBQAEUAUgBDAEUATgBUAEEARwBFACwAOgBwAEkAbgBzAF8AQgBFAEcASQBOAF8A
+RABBAFQARQAsADoAcABJAG4AcwBfAEUATgBEAF8ARABBAFQARQAsADoAcABJAG4AcwBfAEkAUwBf
+AFAAUgBFAFYASQBPAFUAUwAsADoAcABJAG4AcwBfAEMAUgBFAEEAVABFAF8ARABBAFQARQAsADoA
+cABJAG4AcwBfAEQARQBBAEMAVABJAFYAQQBUAEUARABfAEQAQQBUAEUALAA6AHAASQBuAHMAXwBB
+AFAAUABFAEEAUgBFAEQAXwBEAEEAVABFACwAOgBwAEkAbgBzAF8ARABBAFQARQBfAE0ATwBEAEkA
+RgBJAEUARAApAAATTABPAE8ASwBVAFAAXwBJAEQAABdDAEEAVABFAEcATwBSAFkAXwBJAEQAAB1w
+AEkAbgBzAF8ATABPAE8ASwBVAFAAXwBJAEQAACFwAEkAbgBzAF8AQwBBAFQARQBHAE8AUgBZAF8A
+SQBEAAA3TABvAGEAZAAgAFQAYQBiAGwAZQAgAFYASQBfAEIAUgBFAEUARABfAEMAQQBUAF8ATQBB
+AFAAAGVzAGUAbABlAGMAdAAgACoAIABmAHIAbwBtACAAcAB1AGIAbABpAGMALgBWAEkAXwBCAFIA
+RQBFAEQAXwBDAEEAVABfAE0AQQBQACAAbABpAG0AaQB0ACAAMQAwADAAMAAwADAAAIEtaQBuAHMA
+ZQByAHQAIABpAG4AdABvACAARABEAF8AUABHAFMAUQBMAF8AVgBJAF8AQgBSAEUARQBEAF8AQwBB
+AFQAXwBNAEEAUAAgACgATABPAE8ASwBVAFAAXwBJAEQALABDAEEAVABFAEcATwBSAFkAXwBJAEQA
+LABJAEQALABEAEEAVABFAF8ATQBPAEQASQBGAEkARQBEACkAIAB2AGEAbAB1AGUAcwAgACgAOgBw
+AEkAbgBzAF8ATABPAE8ASwBVAFAAXwBJAEQALAA6AHAASQBuAHMAXwBDAEEAVABFAEcATwBSAFkA
+XwBJAEQALAA6AHAASQBuAHMAXwBJAEQALAA6AHAASQBuAHMAXwBEAEEAVABFAF8ATQBPAEQASQBG
+AEkARQBEACkAAHFTAFQAXwAxADMAYwBhADMAYQAxADcANgBhADQAOAA0ADUANQA0ADkAZgA2ADYA
+YgBiADQAOQAzADgAZAAzADUANwA4AGQALgBQAHIAbwBwAGUAcgB0AGkAZQBzAC4AUgBlAHMAbwB1
+AHIAYwBlAHMAAA1OAHAAZwBzAHEAbAAAFU4AcABnAHMAcQBsAC4AZABsAGwAABtNAG8AbgBvAC4A
+UwBlAGMAdQByAGkAdAB5AAAjTQBvAG4AbwAuAFMAZQBjAHUAcgBpAHQAeQAuAGQAbABsAAAnUwB5
+AHMAdABlAG0AOgA6AE0AYQBjAGgAaQBuAGUATgBhAG0AZQAAF0QAYQBpAGwAeQBEAGUAbAB0AGEA
+XwAAI00ATQBfAGQAZABfAHkAeQB5AHkAXwBIAEgAbQBtAHMAcwAAAAAAjhud/6JjBkixErxQ2Rj/
+pgAIt3pcVhk04IkIiYRdzYCAzJECBg4IXYuQ1S9G/acKAAEVEhUBEgwSGQiJtIP0KcRzQggGFRId
+Ag4RIQkAABUSHQIOESEDAAABAyAAARAgDQEODg4ODg4ODg4ODg4OCgABFRIVARIUEhkHIAQBDg4O
+DgcABA4ODg4OCQAGAQ4ODg4OCAkABgEODg4ODg4FAAIBDg4KAAEVEhUBEiwSGQwgCQEODg4ODg4O
+Dg4KAAEVEhUBEjQSGQoAARUSFQESPBIZAwYSJQMGEikEAAASJQQAABIpBQABARIpBAgAEiUECAAS
+KQMGEkQEAAASRAQIABJEBwACEi0cEjECBggDBhFMBAAAAAAEAQAAAAQgAQEOBCABAQgGFRIVARIM
+BCABHA4DIAAOBQACAg4OBQABEXEOBCABDg4FIAEBEwADIAACDgcEFRIVARIMEXERcRFxBxUSHQIO
+ESEHIAIBEwATAQgGFRF1Ag4RIQUgARwSDAYAARJ5EX0HFRF1Ag4RIQQgABMAByABHRKAgQ4EIAEc
+HAkHARURdQIOESEEAAARcQcgAgEOEoCJBCAAEhkFIAASgJkGIAEBEYChBCABAQIDIAAICyAAFRGA
+pQITABMBCBURgKUCDhEhCiAAFRF1AhMAEwEFIAASgKkEIAATAQgVEoCtAhIMHAUgAgEcGBoQAgIV
+EoC1AR4BFRKAtQEeABUSgK0CHgAeAQUKAhIMHA0QAQEdHgAVEoC1AR4AAwoBHAwgBBKAuQ4RIRwR
+gL0EIAEOCAUAAQ4dDgUgAg4ICEEHEg4IEoCJEoCREhkVEhUBEgwSgJUSgJkVEoCtAhIMHBJQEoDF
+Dg4RcRURgKUCDhEhFRF1Ag4RIRURdQIOESEdDgYVEhUBEhQKBwIVEhUBEhQRcQUgARwSFAgVEoCt
+AhIUHAUKAhIUHEEHEg4IEoCJEoCREhkVEhUBEhQSgJUSgJkVEoCtAhIUHBJUEoDFDg4RcRURgKUC
+DhEhFRF1Ag4RIRURdQIOESEdDgUHAg4dDgcgAgEOEoCVDQcFEoCVDhKAmRFxHQ4FIAIOAwMOBwYS
+gJUODhKAmRFxHQ4LBwQSgJUOEoCZHQ4GFRIVARIsCAcBFRIVARIsBSABHBIsCBUSgK0CEiwcBQoC
+EiwcQQcSDggSgIkSgJESGRUSFQESLBKAlRKAmRUSgK0CEiwcElgSgMUODhFxFRGApQIOESEVEXUC
+DhEhFRF1Ag4RIR0OBhUSFQESNBQHBxUSFQESNBFxEXERcRFxEXERcQUgARwSNAgVEoCtAhI0HAUK
+AhI0HEEHEg4IEoCJEoCREhkVEhUBEjQSgJUSgJkVEoCtAhI0HBJcEoDFDg4RcRURgKUCDhEhFRF1
+Ag4RIRURdQIOESEdDgYVEhUBEjwKBwIVEhUBEjwRcQUgARwSPAgVEoCtAhI8HAUKAhI8HEEHEg4I
+EoCJEoCREhkVEhUBEjwSgJUSgJkVEoCtAhI8HBJgEoDFDg4RcRURgKUCDhEhFRF1Ag4RIRURdQIO
+ESEdDgQgABItBiACAQ4SLQQHARIlBiABARGA2QgBAAIAAAAAAAUAABKA4QYgAQESgOUEIAECDgUA
+Ag4ODgUAARItDgQHAg4OBgABARKA7QkGFRKA8QESgO0FIAASgPUFIAASgPkGIAESgP0cAyAAHAcV
+EhUBEoDtCBUSgPEBEoDtFxABAxGBCRUSgLUBHgASgQEVEoDxAR4ABQoBEoDtDgcDFRIVARKA7RKB
+ARFxRwEAGi5ORVRGcmFtZXdvcmssVmVyc2lvbj12NC4wAQBUDhRGcmFtZXdvcmtEaXNwbGF5TmFt
+ZRAuTkVUIEZyYW1ld29yayA0KAEAI1NUXzEzY2EzYTE3NmE0ODQ1NTQ5ZjY2YmI0OTM4ZDM1Nzhk
+AAAFAQAAAAANAQAITEFTQ0NNMDEAAB4BABlDb3B5cmlnaHQgQCBMQVNDQ00wMSAyMDE3AAAIAQAI
+AAAAAAAeAQABAFQCFldyYXBOb25FeGNlcHRpb25UaHJvd3MBAAAA2IUAAAAAAAAAAAAA7oUAAAAg
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAOCFAAAAAAAAAABfQ29yRGxsTWFpbgBtc2NvcmVlLmRsbAAA
+AAAA/yUAIAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAQAQAAAAGAAAgAAAAAAAAAAAAAAAAAAAAQABAAAAMAAAgAAAAAAA
+AAAAAAAAAAAAAQAAAAAASAAAAFigAAD0AwAAAAAAAAAAAAD0AzQAAABWAFMAXwBWAEUAUgBTAEkA
+TwBOAF8ASQBOAEYATwAAAAAAvQTv/gAAAQAAAAEAWGn5GAAAAQBYafkYPwAAAAAAAAAEAAAAAgAA
+AAAAAAAAAAAAAAAAAEQAAAABAFYAYQByAEYAaQBsAGUASQBuAGYAbwAAAAAAJAAEAAAAVAByAGEA
+bgBzAGwAYQB0AGkAbwBuAAAAAAAAALAEVAMAAAEAUwB0AHIAaQBuAGcARgBpAGwAZQBJAG4AZgBv
+AAAAMAMAAAEAMAAwADAAMAAwADQAYgAwAAAANAAJAAEAQwBvAG0AcABhAG4AeQBOAGEAbQBlAAAA
+AABMAEEAUwBDAEMATQAwADEAAAAAAHAAJAABAEYAaQBsAGUARABlAHMAYwByAGkAcAB0AGkAbwBu
+AAAAAABTAFQAXwAxADMAYwBhADMAYQAxADcANgBhADQAOAA0ADUANQA0ADkAZgA2ADYAYgBiADQA
+OQAzADgAZAAzADUANwA4AGQAAABAAA8AAQBGAGkAbABlAFYAZQByAHMAaQBvAG4AAAAAADEALgAw
+AC4ANgAzADkAMwAuADIANgA5ADYAOAAAAAAAcAAoAAEASQBuAHQAZQByAG4AYQBsAE4AYQBtAGUA
+AABTAFQAXwA3ADMAZgAwADcAYgA0ADAAYQAwADYAMgA0AGUAZQA4ADkANwBhAGUANwBmAGIAYQA1
+ADEAMQBhAGQAZQAzADUALgBkAGwAbAAAAFgAGgABAEwAZQBnAGEAbABDAG8AcAB5AHIAaQBnAGgA
+dAAAAEMAbwBwAHkAcgBpAGcAaAB0ACAAQAAgAEwAQQBTAEMAQwBNADAAMQAgADIAMAAxADcAAAB4
+ACgAAQBPAHIAaQBnAGkAbgBhAGwARgBpAGwAZQBuAGEAbQBlAAAAUwBUAF8ANwAzAGYAMAA3AGIA
+NAAwAGEAMAA2ADIANABlAGUAOAA5ADcAYQBlADcAZgBiAGEANQAxADEAYQBkAGUAMwA1AC4AZABs
+AGwAAABoACQAAQBQAHIAbwBkAHUAYwB0AE4AYQBtAGUAAAAAAFMAVABfADEAMwBjAGEAMwBhADEA
+NwA2AGEANAA4ADQANQA1ADQAOQBmADYANgBiAGIANAA5ADMAOABkADMANQA3ADgAZAAAAEQADwAB
+AFAAcgBvAGQAdQBjAHQAVgBlAHIAcwBpAG8AbgAAADEALgAwAC4ANgAzADkAMwAuADIANgA5ADYA
+OAAAAAAASAAPAAEAQQBzAHMAZQBtAGIAbAB5ACAAVgBlAHIAcwBpAG8AbgAAADEALgAwAC4ANgAz
+ADkAMwAuADIANgA5ADYAOAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AACAAAAMAAAAADYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</BinaryItem>
+        </ScriptProject>
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
+<!--This CDATA section contains the layout information of the package. The section includes information such as (x,y) coordinates, width, and height.-->
+<!--If you manually edit this section and make a mistake, you can delete it. -->
+<!--The package will still be able to load normally but the previous layout information will be lost and the designer will automatically re-arrange the elements on the design surface.-->
+<Objects
+  Version="sql11">
+  <!--Each node below will contain properties that do not affect runtime behavior.-->
+  <Package
+    design-time-name="Package">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="4" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph">
+        <NodeLayout
+          Size="297,42"
+          Id="Package\Oracle_Bulk_Insert_MultipleNpgsqlConnection"
+          TopLeft="370,112" />
+      </GraphLayout>
+    </LayoutInfo>
+  </Package>
+</Objects>]]></DTS:DesignTimeProperties>
+</DTS:Executable>
