@@ -11,8 +11,8 @@
   DTS:LocaleID="1033"
   DTS:ObjectName="DailyDelta_Stage1"
   DTS:PackageType="5"
-  DTS:VersionBuild="249"
-  DTS:VersionGUID="{750CA1BC-8756-419A-9099-F958C6788B9C}">
+  DTS:VersionBuild="250"
+  DTS:VersionGUID="{044DC014-484A-4708-92BE-9A4C986BED10}">
   <DTS:Property
     DTS:Name="PackageFormatVersion">6</DTS:Property>
   <DTS:Variables>
@@ -40,6 +40,24 @@
       <DTS:ObjectData>
         <ScriptProject
           Name="ST_79f999a3537c446e9bcb5ab2a3cd6763"
+          VSTAMajorVersion="3"
+          VSTAMinorVersion="0"
+          Language="CSharp" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\Script Task_3"
+      DTS:CreationName="Microsoft.SqlServer.Dts.Tasks.ScriptTask.ScriptTask, Microsoft.SqlServer.ScriptTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+      DTS:Description="Script Task"
+      DTS:DTSID="{B84D45CB-71B9-4720-AFB8-E436BE6D0F5D}"
+      DTS:ExecutableType="Microsoft.SqlServer.Dts.Tasks.ScriptTask.ScriptTask, Microsoft.SqlServer.ScriptTask, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Script Task_3"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <ScriptProject
+          Name="ST_29f0763483b04df4a583761b0035d44a"
           VSTAMajorVersion="3"
           VSTAMinorVersion="0"
           Language="CSharp" />
@@ -85,6 +103,14 @@
       DTS:LogicalAnd="True"
       DTS:ObjectName="Constraint"
       DTS:To="Package\Script Task_2" />
+    <DTS:PrecedenceConstraint
+      DTS:refId="Package.PrecedenceConstraints[Constraint 1]"
+      DTS:CreationName=""
+      DTS:DTSID="{8C9F9AA3-F430-4C9E-B69D-5FB9466305F2}"
+      DTS:From="Package\Script Task_2"
+      DTS:LogicalAnd="True"
+      DTS:ObjectName="Constraint 1"
+      DTS:To="Package\Script Task_3" />
   </DTS:PrecedenceConstraints>
   <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
 <!--This CDATA section contains the layout information of the package. The section includes information such as (x,y) coordinates, width, and height.-->
@@ -97,7 +123,11 @@
     design-time-name="Package">
     <LayoutInfo>
       <GraphLayout
-        Capacity="4" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
+        Capacity="8" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
+        <NodeLayout
+          Size="144,42"
+          Id="Package\Script Task_2"
+          TopLeft="830,284" />
         <NodeLayout
           Size="133,42"
           Id="Package\Sequence Container\Script Task"
@@ -109,10 +139,6 @@
           Size="271,327"
           Id="Package\Sequence Container"
           TopLeft="447,176" />
-        <NodeLayout
-          Size="144,42"
-          Id="Package\Script Task_2"
-          TopLeft="830,284" />
         <EdgeLayout
           Id="Package.PrecedenceConstraints[Constraint]"
           TopLeft="718,339.5">
@@ -139,6 +165,44 @@
                     Point3="60,-34.5" />
                   <mssgle:LineSegment
                     End="104.5,-34.5" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+        <NodeLayout
+          Size="144,42"
+          Id="Package\Script Task_3"
+          TopLeft="1098,299" />
+        <EdgeLayout
+          Id="Package.PrecedenceConstraints[Constraint 1]"
+          TopLeft="974,305">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="124,15"
+              Start="0,0"
+              End="116.5,15">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="58,0" />
+                  <mssgle:CubicBezierSegment
+                    Point1="58,0"
+                    Point2="62,0"
+                    Point3="62,4" />
+                  <mssgle:LineSegment
+                    End="62,11" />
+                  <mssgle:CubicBezierSegment
+                    Point1="62,11"
+                    Point2="62,15"
+                    Point3="66,15" />
+                  <mssgle:LineSegment
+                    End="116.5,15" />
                 </mssgle:SegmentCollection>
               </mssgle:Curve.Segments>
             </mssgle:Curve>
